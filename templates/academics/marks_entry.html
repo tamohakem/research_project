@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enter Marks - FET Academic System</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: auto; }
+        .header { background: #003366; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .info-box { background: #e6f3ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .success-box { background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #003366; color: white; }
+        input { width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+        button { background: #28a745; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; }
+        .btn-back { background: #6c757d; display: inline-block; padding: 8px 15px; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
+        .passed { color: green; font-weight: bold; }
+        .failed { color: red; font-weight: bold; }
+        .warning { color: #dc3545; font-size: 12px; margin-top: 5px; }
+        .total-cell { font-weight: bold; }
+        .info-note { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Enter Course Marks</h1>
+            <a href="/dashboard/" class="btn-back">Back to Dashboard</a>
+        </div>
+        
+        <div class="info-box">
+            <strong>Student:</strong> {{ user.get_full_name }}<br>
+            <strong>Programme:</strong> {{ user.programme.name|default:"Not assigned" }}<br>
+            <strong>Current Year:</strong> Year {{ current_year }}<br>
+            <strong>Academic Year:</strong> {{ academic_year }} | <strong>Semester:</strong> Semester {{ semester }}<br>
+            <strong>Note:</strong> CA marks (max 30) + Exam marks (max 70) = Total 100
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="success-box">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        
+        {% if courses %}
+            <form method="post" id="marksForm">
+                {% csrf_token %}
+                <input type="hidden" name="academic_year" value="{{ academic_year }}">
+                <input type="hidden" name="semester" value="{{ semester }}">
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Title</th>
+                            <th>Credits</th>
+                            <th>Course Type</th>
+                            <th>CA (0-30)</th>
+                            <th>Exam (0-70)</th>
+                            <th>Total (0-100)</th>
+                            <th>Grade</th>
+                            <th>Points</th>
+                            <th>Credit Earned?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td><strong>{{ course.code }}</strong></td>
+                            <td>{{ course.title }}</td>
+                            <td>{{ course.credits }}</td>
+                            <td>
+                                {% if course.status_type == 'Compulsory' %}
+                                    <span style="color: #dc3545;">Compulsory (50%+ to pass)</span>
+                                {% else %}
+                                    <span style="color: #28a745;">Elective (40%+ passes)</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <input type="number" 
+                                       step="0.01" 
+                                       name="ca_{{ course.id }}" 
+                                       id="ca_{{ course.id }}"
+                                       value="0" 
+                                       min="0" 
+                                       max="30" 
+                                       required
+                                       onchange="validateCA(this)"
+                                       oninput="calculateTotal({{ course.id }}, '{{ course.status_type }}')">
+                                <div id="ca_warning_{{ course.id }}" class="warning"></div>
+                            </td>
+                            <td>
+                                <input type="number" 
+                                       step="0.01" 
+                                       name="exam_{{ course.id }}" 
+                                       id="exam_{{ course.id }}"
+                                       value="0" 
+                                       min="0" 
+                                       max="70" 
+                                       required
+                                       onchange="validateExam(this)"
+                                       oninput="calculateTotal({{ course.id }}, '{{ course.status_type }}')">
+                                <div id="exam_warning_{{ course.id }}" class="warning"></div>
+                            </td>
+                            <td id="total_{{ course.id }}" class="total-cell">0.00%</td>
+                            <td id="grade_{{ course.id }}">-</td>
+                            <td id="points_{{ course.id }}">-</td>
+                            <td id="credit_{{ course.id }}" class="failed">No</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit" onclick="return validateAllMarks()">Save All Marks</button>
+            </form>
+            
+            <div class="info-note">
+                <strong>University of Buea Credit Rules:</strong>
+                <ul>
+                    <li><strong>Compulsory Courses:</strong> Require 50% (Grade C) or higher to earn credit</li>
+                    <li><strong>Elective Courses:</strong> Require 40% (Grade D) or higher</li>
+                    <li><strong>D+ and D grades (40-49%):</strong> Do NOT earn credit for graduation</li>
+                    <li><strong>Only grades C and above (50%+):</strong> Earn full credit toward graduation</li>
+                    <li><strong>F (below 40%):</strong> No credit, must retake</li>
+                </ul>
+            </div>
+        {% else %}
+            <div class="no-courses">
+                <h3>No Courses Found</h3>
+                <p>No courses are linked to your programme for Year {{ current_year }}.</p>
+                <p><strong>Possible solutions:</strong></p>
+                <ul style="text-align: left; display: inline-block;">
+                    <li>Make sure you have a programme assigned to your account</li>
+                    <li>Ask admin to link courses to your programme via "Course Programmes" in admin panel</li>
+                    <li>Check that courses are linked to Year {{ current_year }}, Semester {{ semester }}</li>
+                </ul>
+                <br>
+                <a href="/admin/curriculum/courseprogramme/" class="btn-back" style="display: inline-block; margin-top: 20px;">Go to Admin -> Course Programmes</a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        // Validate CA mark (max 30)
+        function validateCA(input) {
+            var value = parseFloat(input.value);
+            var courseId = input.id.split('_')[1];
+            var warningDiv = document.getElementById('ca_warning_' + courseId);
+            
+            if (isNaN(value)) {
+                input.value = 0;
+                return;
+            }
+            
+            if (value > 30) {
+                input.value = 30;
+                warningDiv.innerHTML = 'CA cannot exceed 30. Set to 30.';
+                setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+            } else if (value < 0) {
+                input.value = 0;
+                warningDiv.innerHTML = 'CA cannot be negative. Set to 0.';
+                setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+            } else {
+                warningDiv.innerHTML = '';
+            }
+        }
+        
+        // Validate Exam mark (max 70)
+        function validateExam(input) {
+            var value = parseFloat(input.value);
+            var courseId = input.id.split('_')[1];
+            var warningDiv = document.getElementById('exam_warning_' + courseId);
+            
+            if (isNaN(value)) {
+                input.value = 0;
+                return;
+            }
+            
+            if (value > 70) {
+                input.value = 70;
+                warningDiv.innerHTML = 'Exam cannot exceed 70. Set to 70.';
+                setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+            } else if (value < 0) {
+                input.value = 0;
+                warningDiv.innerHTML = 'Exam cannot be negative. Set to 0.';
+                setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+            } else {
+                warningDiv.innerHTML = '';
+            }
+        }
+        
+        // Calculate total, grade, points, and credit eligibility
+        function calculateTotal(courseId, courseType) {
+            var caInput = document.getElementById('ca_' + courseId);
+            var examInput = document.getElementById('exam_' + courseId);
+            
+            if (!caInput || !examInput) return;
+            
+            var caMark = parseFloat(caInput.value) || 0;
+            var examMark = parseFloat(examInput.value) || 0;
+            
+            // Ensure marks are within limits
+            if (caMark > 30) caMark = 30;
+            if (caMark < 0) caMark = 0;
+            if (examMark > 70) examMark = 70;
+            if (examMark < 0) examMark = 0;
+            
+            var total = caMark + examMark;
+            var totalPercent = total.toFixed(2);
+            
+            document.getElementById('total_' + courseId).innerHTML = totalPercent + '%';
+            
+            // Calculate grade based on UB scale
+            var grade = '';
+            var gradePoint = 0;
+            var earnsCredit = false;
+            var creditText = '';
+            var creditClass = '';
+            
+            // UB Rules: Only grades C and above (50%+) earn credit toward graduation
+            // D+ and D (40-49%) do NOT earn credit
+            if (total >= 80) {
+                grade = 'A';
+                gradePoint = 4.00;
+                earnsCredit = true;
+                creditText = 'Yes';
+                creditClass = 'passed';
+            } else if (total >= 70) {
+                grade = 'B+';
+                gradePoint = 3.50;
+                earnsCredit = true;
+                creditText = 'Yes';
+                creditClass = 'passed';
+            } else if (total >= 60) {
+                grade = 'B';
+                gradePoint = 3.00;
+                earnsCredit = true;
+                creditText = 'Yes';
+                creditClass = 'passed';
+            } else if (total >= 55) {
+                grade = 'C+';
+                gradePoint = 2.50;
+                earnsCredit = true;
+                creditText = 'Yes';
+                creditClass = 'passed';
+            } else if (total >= 50) {
+                grade = 'C';
+                gradePoint = 2.00;
+                earnsCredit = true;
+                creditText = 'Yes';
+                creditClass = 'passed';
+            } else if (total >= 45) {
+                grade = 'D+';
+                gradePoint = 1.50;
+                earnsCredit = false;
+                creditText = 'No (Below 50%)';
+                creditClass = 'failed';
+            } else if (total >= 40) {
+                grade = 'D';
+                gradePoint = 1.00;
+                earnsCredit = false;
+                creditText = 'No (Below 50%)';
+                creditClass = 'failed';
+            } else {
+                grade = 'F';
+                gradePoint = 0.00;
+                earnsCredit = false;
+                creditText = 'No';
+                creditClass = 'failed';
+            }
+            
+            document.getElementById('grade_' + courseId).innerHTML = grade;
+            document.getElementById('points_' + courseId).innerHTML = gradePoint.toFixed(2);
+            
+            var creditElement = document.getElementById('credit_' + courseId);
+            creditElement.innerHTML = creditText;
+            creditElement.className = creditClass;
+        }
+        
+        // Validate all marks before form submission
+        function validateAllMarks() {
+            var isValid = true;
+            var errorMessages = [];
+            
+            {% for course in courses %}
+                var caInput = document.getElementById('ca_{{ course.id }}');
+                var examInput = document.getElementById('exam_{{ course.id }}');
+                
+                var caMark = parseFloat(caInput.value) || 0;
+                var examMark = parseFloat(examInput.value) || 0;
+                
+                if (caMark < 0 || caMark > 30) {
+                    isValid = false;
+                    errorMessages.push('CA for {{ course.code }} must be between 0 and 30');
+                }
+                if (examMark < 0 || examMark > 70) {
+                    isValid = false;
+                    errorMessages.push('Exam for {{ course.code }} must be between 0 and 70');
+                }
+                if (caMark + examMark > 100) {
+                    isValid = false;
+                    errorMessages.push('Total for {{ course.code }} exceeds 100 (CA + Exam)');
+                }
+            {% endfor %}
+            
+            if (!isValid) {
+                alert('Please fix the following errors:\n' + errorMessages.join('\n'));
+                return false;
+            }
+            
+            return confirm('Save all marks? This will update your academic records.');
+        }
+        
+        // Calculate on page load for any existing values
+        document.addEventListener('DOMContentLoaded', function() {
+            {% for course in courses %}
+                calculateTotal({{ course.id }}, '{{ course.status_type }}');
+            {% endfor %}
+        });
+    </script>
+</body>
+</html>

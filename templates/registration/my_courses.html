@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Courses - FET System</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        h1 { color: #003366; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #003366; color: white; }
+        .btn { background: #666; color: white; padding: 10px 20px; text-decoration: none; display: inline-block; margin: 10px 5px; border-radius: 5px; }
+        .btn-drop { background: #dc3545; color: white; padding: 5px 15px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-register-more { background: #28a745; }
+        .info-box { background: #e6f3ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 My Registered Courses</h1>
+        <a href="/dashboard" class="btn">← Back to Dashboard</a>
+        <a href="/registration/catalog/" class="btn btn-register-more">+ Register More Courses</a>
+        
+        <div class="info-box">
+            <strong>Student:</strong> {{ user.get_full_name }}<br>
+            <strong>Academic Year:</strong> {{ academic_year }} | <strong>Semester:</strong> {{ semester }}<br>
+            <strong>Total Credits Registered:</strong> {{ total_credits }}
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div style="color: green; margin: 10px 0;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Course Title</th>
+                    <th>Credits</th>
+                    <th>Status</th>
+                    <th>Registered Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in registrations %}
+                <tr>
+                    <td><strong>{{ reg.course.code }}</strong>
+                    <td>{{ reg.course.title }}
+                    <td>{{ reg.course.credits }}
+                    <td>{{ reg.status|title }}
+                    <td>{{ reg.registered_date|date:"Y-m-d" }}
+                    <td>
+                        <form method="post" action="/registration/drop/{{ reg.id }}/" onsubmit="return confirm('Are you sure you want to drop {{ reg.course.code }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-drop">Drop</button>
+                        </form>
+                    
+                </tr>
+                {% empty %}
+                    <tr><td colspan="6">You haven't registered for any courses yet. <a href="/registration/catalog/">Browse courses</a></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="info-box" style="margin-top: 20px;">
+            <strong>⚠️ Note:</strong> Dropped courses will be removed from your record. You can register for new courses from the Course Catalog.
+        </div>
+    </div>
+</body>
+</html>

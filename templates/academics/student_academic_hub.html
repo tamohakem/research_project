@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Academic Hub - FET System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <h3>🎓 Student Academic Hub</h3>
+                <p>Manage your courses, marks, and academic progress</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ cgpa|default:"0.00" }}</h2>
+                <p class="text-muted">CGPA</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-graduation-cap fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ completed_credits|default:"0" }}</h2>
+                <p class="text-muted">Credits Completed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-percent fa-2x text-primary mb-2"></i>
+                <div class="progress mb-2" style="height: 10px;">
+                    <div class="progress-bar bg-success" style="width: {{ progress_percentage|default:"0" }}%"></div>
+                </div>
+                <h4 class="mb-0">{{ progress_percentage|default:"0" }}%</h4>
+                <p class="text-muted">Progress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-book-open fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ available_courses|length|default:"0" }}</h2>
+                <p class="text-muted">Available Courses</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'academics:select_courses' %}" class="btn btn-primary w-100">📚 Select Courses</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'academics:marks_entry' %}" class="btn btn-success w-100">✏️ Enter Marks</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'academics:simulate_marks' %}" class="btn btn-warning w-100">🎲 Simulate Marks</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'registration:my_courses' %}" class="btn btn-info w-100">📋 My Courses</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registered Courses -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">My Registered Courses</h5>
+            </div>
+            <div class="card-body">
+                {% if registered_courses %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr><th>Code</th><th>Title</th><th>Credits</th><th>Status</th><th>Grade</th><th>Action</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for item in registered_courses %}
+                                <tr>
+                                    <td>{{ item.course.code }}</td>
+                                    <td>{{ item.course.title|truncatechars:30 }}</td>
+                                    <td>{{ item.course.credits }}</td>
+                                    <td>{{ item.course.status_type }}</td>
+                                    <td>
+                                        {% if item.has_marks %}
+                                            <span class="badge bg-success">{{ item.grade }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Not entered</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'academics:marks_entry' %}" class="btn btn-sm btn-outline-primary">Enter Marks</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center">No registered courses. <a href="{% url 'academics:select_courses' %}">Select courses now</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

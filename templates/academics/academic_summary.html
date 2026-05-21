@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Summary - FET Academic System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h3>Academic Summary</h3>
+                    <p>Your academic performance summary</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Your CGPA</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="display-1">{{ cgpa }}</h1>
+                    <p>{{ classification }}</p>
+                    <small class="text-muted">
+                        CGPA = Average of all Semester GPAs
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">GPA Calculation Method</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Semester GPA:</strong> Sum(Credit Hours x Grade Points) / Sum(Credit Hours)</p>
+                    <p><strong>CGPA:</strong> (Sum of Semester GPAs) / (Number of Semesters)</p>
+                    <p><strong>Pass Threshold:</strong> Grade C (50%) for ALL courses</p>
+                    <hr>
+                    <p><strong>Attempts:</strong> The average of all attempts for each course is used</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semester GPAs Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Semester GPAs (CGPA = Average of Semester GPAs)</h5>
+                </div>
+                <div class="card-body">
+                    {% if semester_gpas %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Academic Year</th>
+                                        <th>Semester</th>
+                                        <th>GPA</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sem in semester_gpas %}
+                                    <tr>
+                                        <td>{{ sem.academic_year }}</div>
+                                        <td>Semester {{ sem.semester }}</div>
+                                        <td><strong>{{ sem.gpa }}</strong></div>
+                                        <td>
+                                            {% if sem.gpa >= 2.00 %}
+                                                <span class="badge bg-success">Passed</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Below 2.00</span>
+                                            {% endif %}
+                                        </div>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">CGPA (Average)</th>
+                                        <th colspan="2"><strong>{{ cgpa }}</strong></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-center">No semester GPA data available. Enter marks to see your GPA.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grading Scale -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">University of Buea Grading Scale (50% Pass Threshold for ALL Courses)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Percentage</th>
+                                    <th>Grade</th>
+                                    <th>Grade Point</th>
+                                    <th>Description</th>
+                                    <th>Credit Earned?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background-color: #d4edda;">
+                                    <td>80-100%</td>
+                                    <td>A</td>
+                                    <td>4.00</td>
+                                    <td>Excellent</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr style="background-color: #d4edda;">
+                                    <td>70-79%</td>
+                                    <td>B+</td>
+                                    <td>3.50</td>
+                                    <td>Very Good</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr style="background-color: #d4edda;">
+                                    <td>60-69%</td>
+                                    <td>B</td>
+                                    <td>3.00</td>
+                                    <td>Good</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr style="background-color: #d4edda;">
+                                    <td>55-59%</td>
+                                    <td>C+</td>
+                                    <td>2.50</td>
+                                    <td>Above Average</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr style="background-color: #d4edda;">
+                                    <td>50-54%</td>
+                                    <td>C</td>
+                                    <td>2.00</td>
+                                    <td>Average (MINIMUM PASS)</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr style="background-color: #f8d7da;">
+                                    <td>45-49%</td>
+                                    <td>D+</td>
+                                    <td>1.50</td>
+                                    <td>Marginal Pass - FAIL</td>
+                                    <td>No</td>
+                                </tr>
+                                <tr style="background-color: #f8d7da;">
+                                    <td>40-44%</td>
+                                    <td>D</td>
+                                    <td>1.00</td>
+                                    <td>Pass (Electives) - FAIL</td>
+                                    <td>No</td>
+                                </tr>
+                                <tr style="background-color: #f8d7da;">
+                                    <td>Below 40%</td>
+                                    <td>F</td>
+                                    <td>0.00</td>
+                                    <td>Fail</td>
+                                    <td>No</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <strong>Note:</strong> CGPA is calculated as the average of all semester GPAs. 
+                        Each semester GPA is calculated based on the average of all attempts for each course in that semester.
+                        Grade C (50%) is the minimum passing grade for ALL courses.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

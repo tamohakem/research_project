@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Courses - FET Academic System</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: auto; }
+        .header { background: #003366; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .btn-back { background: #6c757d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; display: inline-block; }
+        .btn-primary { background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-secondary { background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #003366; color: white; }
+        .info-box { background: #e6f3ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .alert-warning { background: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; text-align: center; }
+        .badge-danger { background: #dc3545; color: white; padding: 3px 8px; border-radius: 3px; font-size: 12px; }
+        .badge-success { background: #28a745; color: white; padding: 3px 8px; border-radius: 3px; font-size: 12px; }
+        .form-check { margin-top: 20px; }
+        .text-end { text-align: right; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Select Your Courses</h1>
+            <p>Choose courses to register for your programme</p>
+            <a href="/academics/hub/" class="btn-back">← Back to Hub</a>
+        </div>
+
+        <div class="info-box">
+            <p><strong>Student:</strong> {{ user.get_full_name|default:user.username }}</p>
+            <p><strong>Programme:</strong> {{ programme.name|default:"Not assigned" }}</p>
+            <p><strong>Current Year:</strong> Year {{ current_year|default:"1" }}</p>
+            <p><strong>Note:</strong> Grade C (50%) is the minimum pass threshold for ALL courses.</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Available Courses</h3>
+                </div>
+                <div class="card-body">
+                    {% if available_courses %}
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Select</th>
+                                        <th>Course Code</th>
+                                        <th>Course Title</th>
+                                        <th>Credits</th>
+                                        <th>Course Type</th>
+                                        <th>Assessment</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cp in available_courses %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" 
+                                                   name="course_ids" 
+                                                   value="{{ cp.course.id }}"
+                                                   id="course_{{ cp.course.id }}">
+                                        </td>
+                                        <td><strong>{{ cp.course.code }}</strong></td>
+                                        <td>{{ cp.course.title }}</td>
+                                        <td>{{ cp.course.credits }}</td>
+                                        <td>
+                                            {% if cp.course.status_type == 'Compulsory' %}
+                                                <span class="badge-danger">Compulsory</span>
+                                            {% else %}
+                                                <span class="badge-success">Elective</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>CA {{ cp.course.ca_weight }}% / Exam {{ cp.course.exam_weight }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="selectAll">
+                            <label class="form-check-label" for="selectAll">Select All Courses</label>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn-primary">Register Selected Courses</button>
+                            <a href="/academics/hub/" class="btn-secondary">Cancel</a>
+                        </div>
+                    {% else %}
+                        <div class="alert-warning">
+                            <p><strong>No courses available!</strong></p>
+                            <p>Please make sure:</p>
+                            <ul style="text-align: left;">
+                                <li>You have a programme assigned to your account</li>
+                                <li>Courses have been added to your programme for Year {{ current_year|default:"1" }}</li>
+                                <li>Contact your administrator to add courses</li>
+                            </ul>
+                            <a href="/admin/curriculum/courseprogramme/" class="btn-secondary">Go to Admin → Course Programmes</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Select All functionality
+        var selectAllCheckbox = document.getElementById('selectAll');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                var checkboxes = document.querySelectorAll('input[name="course_ids"]');
+                for (var i = 0; i < checkboxes.length; i++) {
+                    checkboxes[i].checked = this.checked;
+                }
+            });
+        }
+    </script>
+
+    <style>
+        .card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .card-header {
+            background: #003366;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
+</body>
+</html>

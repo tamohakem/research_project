@@ -1,0 +1,4 @@
+{
+    "isort.importStrategy": "fromEnvironment",
+    "python.sortImports.args": ["--profile", "black"]
+}

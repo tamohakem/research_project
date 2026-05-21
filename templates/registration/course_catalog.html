@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Course Catalog - FET System</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        h1 { color: #003366; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #003366; color: white; }
+        .btn { background: #666; color: white; padding: 10px 20px; text-decoration: none; display: inline-block; margin: 10px 5px; border-radius: 5px; }
+        .btn-register { background: #28a745; color: white; padding: 5px 15px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-registered { background: #6c757d; color: white; padding: 5px 15px; border-radius: 5px; }
+        .btn-back { background: #666; }
+        .info-box { background: #e6f3ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .success { color: green; margin: 10px 0; }
+        .filter-bar { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+        select, input { padding: 8px; margin: 0 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Course Catalog</h1>
+        <a href="/dashboard" class="btn btn-back">← Back to Dashboard</a>
+        <a href="/registration/my-courses/" class="btn">📋 My Registered Courses</a>
+        
+        <div class="info-box">
+            <strong>Student:</strong> {{ user.get_full_name }}<br>
+            <strong>Programme:</strong> {{ programme.name }}<br>
+            <strong>Current Year:</strong> {{ current_year }}
+        </div>
+        
+        <div class="filter-bar">
+            <form method="get">
+                <label>Academic Year:</label>
+                <input type="text" name="academic_year" value="{{ academic_year }}">
+                <label>Year of Study:</label>
+                <select name="year">
+                    <option value="1" {% if year == 1 %}selected{% endif %}>Year 1</option>
+                    <option value="2" {% if year == 2 %}selected{% endif %}>Year 2</option>
+                    <option value="3" {% if year == 3 %}selected{% endif %}>Year 3</option>
+                    <option value="4" {% if year == 4 %}selected{% endif %}>Year 4</option>
+                </select>
+                <label>Semester:</label>
+                <select name="semester">
+                    <option value="1" {% if semester == 1 %}selected{% endif %}>Semester 1</option>
+                    <option value="2" {% if semester == 2 %}selected{% endif %}>Semester 2</option>
+                </select>
+                <button type="submit">Filter</button>
+            </form>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="success">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Course Title</th>
+                    <th>Credits</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cp in available_courses %}
+                <tr>
+                    <td><strong>{{ cp.course.code }}</strong>
+                    <td>{{ cp.course.title }}
+                    <td>{{ cp.course.credits }}
+                    <td>{{ cp.course.status_type }}
+                    <td>
+                        {% if cp.is_registered %}
+                            <span class="btn-registered">✓ Registered</span>
+                        {% else %}
+                            <form method="post" action="/registration/register/{{ cp.course.id }}/" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="academic_year" value="{{ academic_year }}">
+                                <input type="hidden" name="semester" value="{{ semester }}">
+                                <button type="submit" class="btn-register">+ Register</button>
+                            </form>
+                        {% endif %}
+                    
+                </tr>
+                {% empty %}
+                    <tr><td colspan="5">No courses available for this year and semester.</tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="info-box" style="margin-top: 20px;">
+            <strong>💡 Tip:</strong> Register for courses before the deadline. You can view your registered courses in "My Registered Courses".
+        </div>
+    </div>
+</body>
+</html>

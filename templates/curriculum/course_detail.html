@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ course.code }} - Course Details</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { border: 1px solid #ddd; padding: 20px; border-radius: 10px; margin-top: 20px; }
+        .btn { background: #666; color: white; padding: 10px; text-decoration: none; display: inline-block; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/curriculum/courses" class="btn">← Back to Courses</a>
+        
+        <div class="card">
+            <h1>{{ course.code }} - {{ course.title }}</h1>
+            <p><strong>Credits:</strong> {{ course.credits }}</p>
+            <p><strong>Status:</strong> {{ course.status_type }}</p>
+            <p><strong>Assessment:</strong> Continuous Assessment ({{ course.ca_weight }}%) + Exam ({{ course.exam_weight }}%)</p>
+            <p><strong>Description:</strong> {{ course.description|default:"No description available." }}</p>
+        </div>
+    </div>
+</body>
+</html>

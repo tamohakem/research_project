@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <h3>Welcome, {{ user.get_full_name|default:user.username }}!</h3>
+                <p>Your academic dashboard</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Your CGPA</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1 class="display-1">{{ cgpa }}</h1>
+                <p>{{ classification }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'academics:marks_entry' %}" class="btn btn-primary w-100 mb-2">Enter Marks</a>
+                <a href="{% url 'curriculum:course_list' %}" class="btn btn-outline-primary w-100 mb-2">View Courses</a>
+                <a href="{% url 'academics:academic_summary' %}" class="btn btn-outline-primary w-100 mb-2">Academic Summary</a>
+                <a href="/academics/progress/" class="btn btn-outline-primary w-100 mb-2">View Progress</a>
+                <a href="/academics/hub/" class="btn btn-info w-100 mb-2">🎓 Academic Hub</a>
+                
+                <!-- Admin Dashboard Link - Only visible to staff/admin users -->
+                {% if user.is_staff or user.role == 'admin' %}
+                    <a href="/dashboard/admin/" class="btn btn-danger w-100 mb-2">👑 Admin Dashboard</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Progress Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar" style="width: {{ progress_percentage }}%">
+                        {{ progress_percentage }}%
+                    </div>
+                </div>
+                <p><strong>Completed Credits:</strong> {{ completed_credits }} / {{ total_credits_required }}</p>
+                <p><strong>Remaining Courses:</strong> {{ remaining_courses_count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Marks Section -->
+{% if recent_marks %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Marks Entered</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Title</th>
+                                <th>CA Mark</th>
+                                <th>Exam Mark</th>
+                                <th>Total</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mark in recent_marks %}
+                            <tr>
+                                <td>{{ mark.course.code }}</td>
+                                <td>{{ mark.course.title|truncatechars:30 }}</td>
+                                <td>{{ mark.ca_mark }}%</td>
+                                <td>{{ mark.exam_mark }}%</td>
+                                <td><strong>{{ mark.total_mark }}%</strong></td>
+                                <td>{{ mark.grade_letter }}</td>
+                                <td>
+                                    {% if mark.is_passed %}
+                                        <span class="badge bg-success">Passed</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

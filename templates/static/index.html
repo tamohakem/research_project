@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1>Welcome to FET Academic Tracking System</h1>
+    <p class="lead">Track your academic progress, view courses, and monitor your GPA</p>
+    {% if not user.is_authenticated %}
+        <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg">Get Started</a>
+    {% else %}
+        <a href="{% url 'dashboard:home' %}" class="btn btn-primary btn-lg">Go to Dashboard</a>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Course Information</h5>
+                <p>View all courses by programme, year, and semester</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>GPA Calculator</h5>
+                <p>Automatic GPA and CGPA calculation</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Progress Tracking</h5>
+                <p>Track your progress toward graduation</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

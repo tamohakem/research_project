@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Graduation Progress - FET Academic System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h3>Graduation Progress</h3>
+                    <p>Track your progress toward completing your programme requirements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x text-primary mb-2"></i>
+                    <h2 class="mb-0">{{ progress_percentage|default:"0" }}%</h2>
+                    <p class="text-muted">Graduation Progress</p>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-success" style="width: {{ progress_percentage|default:"0" }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <h2 class="mb-0">{{ completed_credits|default:"0" }} / {{ total_credits_required|default:"0" }}</h2>
+                    <p class="text-muted">Completed Credits</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h2 class="mb-0">{{ remaining_credits|default:"0" }}</h2>
+                    <p class="text-muted">Remaining Credits</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credits Summary Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Credits Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr class="table-success">
+                                    <td width="50%"><strong>Completed Credits</strong></td>
+                                    <td><strong>{{ completed_credits|default:"0" }}</strong></td>
+                                </tr>
+                                <tr class="table-warning">
+                                    <td><strong>Remaining Credits</strong></td>
+                                    <td><strong>{{ remaining_credits|default:"0" }}</strong></td>
+                                </tr>
+                                <tr class="table-info">
+                                    <td><strong>Total Credits Required for Graduation</strong></td>
+                                    <td><strong>{{ total_credits_required|default:"0" }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <strong>Credit Calculation Method:</strong>
+                        <ul class="mb-0">
+                            <li>Completed Credits: Sum of credits from all passed courses (Grade C or above, 50%+)</li>
+                            <li>Remaining Credits: Total Required Credits - Completed Credits</li>
+                            <li>Courses with D+, D, or F (below 50%) do NOT count toward completed credits</li>
+                            <li>For courses with multiple attempts, the average percentage is used to determine passing status</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remaining Courses List -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Remaining Courses ({{ total_remaining }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if remaining_courses %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Course Title</th>
+                                        <th>Credits</th>
+                                        <th>Year</th>
+                                        <th>Semester</th>
+                                        <th>Required Pass Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cp in remaining_courses %}
+                                    <tr>
+                                        <td><strong>{{ cp.course.code }}</strong></td>
+                                        <td>{{ cp.course.title }}</td>
+                                        <td>{{ cp.course.credits }}</td>
+                                        <td>Year {{ cp.year }}</td>
+                                        <td>Semester {{ cp.semester }}</td>
+                                        <td>C (50%)</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success text-center">
+                            <i class="fas fa-trophy fa-2x mb-2 d-block"></i>
+                            <strong>Congratulations!</strong> You have completed all required courses for your programme.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Passed Courses List -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Passed Courses (Earned Credits: {{ completed_credits }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if passed_courses %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Course Title</th>
+                                        <th>Credits</th>
+                                        <th>Average Grade</th>
+                                        <th>Grade Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in passed_courses %}
+                                    <tr>
+                                        <td><strong>{{ course.code }}</strong></td>
+                                        <td>{{ course.title }}</td>
+                                        <td>{{ course.credits }}</td>
+                                        <td><span class="badge bg-success">{{ course.grade }}</span></td>
+                                        <td>{{ course.grade_point }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-success">
+                                        <td colspan="2"><strong>Total</strong></td>
+                                        <td><strong>{{ completed_credits }}</strong></td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning text-center">
+                            No passed courses yet. Start entering your marks to see progress.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

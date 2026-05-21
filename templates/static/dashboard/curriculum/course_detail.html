@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4>{{ course.code }} - {{ course.title }}</h4>
+    </div>
+    <div class="card-body">
+        <p><strong>Credits:</strong> {{ course.credits }}</p>
+        <p><strong>Status:</strong> {{ course.status_type }}</p>
+        <p><strong>Assessment:</strong> CA {{ course.ca_weight }}% | Exam {{ course.exam_weight }}%</p>
+        <p><strong>Description:</strong> {{ course.description|default:"No description available." }}</p>
+    </div>
+</div>
+<a href="{% url 'curriculum:course_list' %}" class="btn btn-secondary mt-3">Back to Courses</a>
+{% endblock %}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Courses - FET Academic System</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #003366; color: white; }
+        .btn { background: #666; color: white; padding: 10px; text-decoration: none; display: inline-block; margin: 10px 0; border-radius: 5px; }
+        a { color: #003366; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Course List</h1>
+        <a href="/dashboard" class="btn">Back to Dashboard</a>
+        
+        <table>
+            <thead>
+                <tr><th>Code</th><th>Title</th><th>Credits</th><th>Status</th><th>Year</th><th>Semester</th></tr>
+            </thead>
+            <tbody>
+                {% for cp in page_obj %}
+                <tr>
+                    <td><a href="/curriculum/courses/{{ cp.course.id }}/">{{ cp.course.code }}</a></td>
+                    <td>{{ cp.course.title }}</td>
+                    <td>{{ cp.course.credits }}</td>
+                    <td>{{ cp.course.status_type }}</td>
+                    <td>{{ cp.year }}</td>
+                    <td>Semester {{ cp.semester }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">No courses found. Add courses via admin panel.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Academic Hub - FET System</title>
+    <style>
+        body { font-family: Arial; margin: 0; padding: 0; background: #f0f2f5; }
+        .header { background: linear-gradient(135deg, #003366, #0055aa); color: white; padding: 30px; text-align: center; }
+        .container { max-width: 1400px; margin: auto; padding: 20px; }
+        .stats-bar { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .stat-card { background: white; padding: 20px; border-radius: 15px; text-align: center; flex: 1; min-width: 150px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 32px; font-weight: bold; color: #003366; }
+        .stat-label { color: #666; margin-top: 5px; }
+        .section { background: white; border-radius: 15px; padding: 20px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section h2 { color: #003366; margin-top: 0; border-bottom: 2px solid #003366; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f5f5f5; }
+        .btn { display: inline-block; padding: 10px 20px; background: #003366; color: white; text-decoration: none; border-radius: 8px; margin: 5px; border: none; cursor: pointer; }
+        .btn-primary { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-danger { background: #dc3545; }
+        .btn-info { background: #17a2b8; }
+        .btn-secondary { background: #6c757d; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .badge-success { background: #28a745; color: white; }
+        .badge-danger { background: #dc3545; color: white; }
+        .badge-warning { background: #ffc107; color: #333; }
+        .progress-bar { background: #e0e0e0; border-radius: 10px; overflow: hidden; height: 20px; }
+        .progress-fill { background: #28a745; height: 100%; transition: width 0.3s; }
+        .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+        .course-card { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin: 10px; background: #fafafa; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎓 Student Academic Hub</h1>
+        <p>Manage your courses, marks, and academic progress</p>
+        <a href="/dashboard/" style="color: white; margin: 0 10px;">← Dashboard</a>
+        <a href="/accounts/logout/" style="color: white; margin: 0 10px;">Logout</a>
+    </div>
+    
+    <div class="container">
+        <!-- Statistics -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value">{{ cgpa }}</div>
+                <div class="stat-label">Current CGPA</div>
+                <small>{{ classification }}</small>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ completed_credits }}</div>
+                <div class="stat-label">Credits Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_credits_needed }}</div>
+                <div class="stat-label">Credits Needed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ progress_percentage }}%</div>
+                <div class="stat-label">Progress</div>
+                <div class="progress-bar" style="margin-top: 10px;">
+                    <div class="progress-fill" style="width: {{ progress_percentage }}%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'academics:select_courses' %}" class="btn btn-primary">📚 Select Courses</a>
+            <a href="{% url 'academics:simulate_marks' %}" class="btn btn-warning">🎲 Simulate Marks</a>
+            <a href="{% url 'academics:academic_summary' %}" class="btn btn-info">📊 View Full Summary</a>
+        </div>
+        
+        <!-- Registered Courses with Marks Entry -->
+        <div class="section">
+            <h2>📋 My Registered Courses</h2>
+            {% if registered_courses %}
+                <form method="post" action="{% url 'academics:save_simulation' %}">
+                    {% csrf_token %}
+                    <div class="grid-3">
+                        {% for item in registered_courses %}
+                            <div class="course-card">
+                                <strong>{{ item.course.code }}</strong><br>
+                                {{ item.course.title }}<br>
+                                <small>Credits: {{ item.course.credits }} | Status: {{ item.course.status_type }}</small><br>
+                                {% if item.has_marks %}
+                                    <span class="badge badge-success">✓ Marks Entered</span>
+                                    <strong>Grade: {{ item.grade }} ({{ item.total_mark }}%)</strong>
+                                {% else %}
+                                    <div style="margin-top: 10px;">
+                                        <label>CA ({{ item.course.ca_weight }}%):</label>
+                                        <input type="number" step="0.01" name="ca_{{ item.course.id }}" class="form-control" placeholder="0-100" style="width: 80px; margin: 5px;">
+                                        <label>Exam ({{ item.course.exam_weight }}%):</label>
+                                        <input type="number" step="0.01" name="exam_{{ item.course.id }}" class="form-control" placeholder="0-100" style="width: 80px; margin: 5px;">
+                                        <input type="hidden" name="selected_courses" value="{{ item.course.id }}">
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 15px;">💾 Save Selected Marks</button>
+                </form>
+            {% else %}
+                <p>No registered courses. <a href="{% url 'academics:select_courses' %}">Select courses now</a></p>
+            {% endif %}
+        </div>
+        
+        <!-- Available Courses -->
+        <div class="section">
+            <h2>📚 Available Courses (Not Yet Registered)</h2>
+            {% if available_courses %}
+                <div class="grid-3">
+                    {% for course in available_courses %}
+                        <div class="course-card">
+                            <strong>{{ course.code }}</strong><br>
+                            {{ course.title }}<br>
+                            <small>Credits: {{ course.credits }} | {{ course.status_type }}</small><br>
+                            <a href="{% url 'academics:select_courses' %}" class="btn btn-info" style="margin-top: 10px; font-size: 12px;">Register</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No available courses. You're registered for all courses in your programme!</p>
+            {% endif %}
+        </div>
+        
+        <!-- Grading Scale Reference -->
+        <div class="section">
+            <h2>📖 University of Buea Grading Scale</h2>
+            <table>
+                <thead><tr><th>Grade</th><th>Percentage</th><th>Grade Point</th><th>Description</th></tr></thead>
+                <tbody>
+                    {% for grade in grading_scale %}
+                    <tr><td>{{ grade.grade_letter }}</td><td>{{ grade.min_mark }}-{{ grade.max_mark }}%</td><td>{{ grade.grade_point }}</td><td>{{ grade.description }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
