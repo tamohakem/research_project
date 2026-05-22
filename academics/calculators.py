@@ -6,12 +6,6 @@ class GPACalculator:
     
     @staticmethod
     def calculate_semester_gpa(user, academic_year, semester):
-        """
-        Calculate GPA for a specific semester.
-        GPA = Sum(Credit Hours x Grade Points) / Sum(Credit Hours)
-        Only passed courses (50% or above) are included.
-        """
-        # Get all marks for this semester
         marks = UserMark.objects.filter(
             user=user,
             academic_year=academic_year,
@@ -19,221 +13,125 @@ class GPACalculator:
             exclude_from_cgpa=False
         ).select_related('course')
         
-        # Group by course and calculate average percentage for each course in this semester
-        course_averages = {}
+        course_avg = {}
         for mark in marks:
-            course_id = mark.course.id
-            if course_id not in course_averages:
-                course_averages[course_id] = {
+            cid = mark.course.id
+            if cid not in course_avg:
+                course_avg[cid] = {
                     'course': mark.course,
                     'totals': [],
                     'credits': mark.course.credits
                 }
-            course_averages[course_id]['totals'].append(float(mark.total_mark))
+            course_avg[cid]['totals'].append(float(mark.total_mark))
         
         total_grade_points = Decimal('0.00')
         total_credits = 0
         
-        for course_id, data in course_averages.items():
-            # Calculate average percentage for this course in this semester
-            avg_percentage = sum(data['totals']) / len(data['totals'])
+        for data in course_avg.values():
+            avg_perc = sum(data['totals']) / len(data['totals'])
+            # Grade point mapping (same as before)
+            if avg_perc >= 80: gp = 4.00; passed = True
+            elif avg_perc >= 70: gp = 3.50; passed = True
+            elif avg_perc >= 60: gp = 3.00; passed = True
+            elif avg_perc >= 55: gp = 2.50; passed = True
+            elif avg_perc >= 50: gp = 2.00; passed = True
+            elif avg_perc >= 45: gp = 1.50; passed = False
+            elif avg_perc >= 40: gp = 1.00; passed = False
+            else: gp = 0.00; passed = False
             
-            # Determine grade point based on average percentage
-            # 50% (Grade C) is minimum pass for ALL courses
-            if avg_percentage >= 80:
-                grade_point = 4.00
-                is_passed = True
-            elif avg_percentage >= 70:
-                grade_point = 3.50
-                is_passed = True
-            elif avg_percentage >= 60:
-                grade_point = 3.00
-                is_passed = True
-            elif avg_percentage >= 55:
-                grade_point = 2.50
-                is_passed = True
-            elif avg_percentage >= 50:
-                grade_point = 2.00
-                is_passed = True
-            elif avg_percentage >= 45:
-                grade_point = 1.50
-                is_passed = False
-            elif avg_percentage >= 40:
-                grade_point = 1.00
-                is_passed = False
-            else:
-                grade_point = 0.00
-                is_passed = False
-            
-            if is_passed:
-                total_grade_points += Decimal(str(grade_point)) * data['credits']
+            if passed:
+                total_grade_points += Decimal(str(gp)) * data['credits']
                 total_credits += data['credits']
         
         if total_credits == 0:
             return Decimal('0.00')
-        
-        semester_gpa = total_grade_points / total_credits
-        return round(semester_gpa, 2)
+        return round(total_grade_points / total_credits, 2)
     
     @staticmethod
     def calculate_cumulative_gpa(user):
-        """
-        Calculate CGPA as the AVERAGE of all semester GPAs.
-        CGPA = (Sum of Semester GPAs) / (Number of Semesters)
-        """
-        # Get all distinct semesters for this user
         semesters = UserMark.objects.filter(
             user=user,
             exclude_from_cgpa=False
         ).values('academic_year', 'semester').distinct().order_by('academic_year', 'semester')
-        
         if not semesters:
             return Decimal('0.00')
-        
-        semester_gpas = []
-        for semester_data in semesters:
-            gpa = GPACalculator.calculate_semester_gpa(
-                user,
-                semester_data['academic_year'],
-                semester_data['semester']
-            )
-            semester_gpas.append(gpa)
-        
-        if not semester_gpas:
+        gpas = [GPACalculator.calculate_semester_gpa(user, s['academic_year'], s['semester']) for s in semesters]
+        if not gpas:
             return Decimal('0.00')
-        
-        # CGPA is the average of all semester GPAs
-        cgpa = sum(semester_gpas) / len(semester_gpas)
-        return round(cgpa, 2)
+        return round(sum(gpas) / len(gpas), 2)
     
     @staticmethod
     def get_semester_gpas(user):
-        """
-        Get a list of all semester GPAs with their details.
-        Returns a list of dictionaries with academic_year, semester, and gpa.
-        """
         semesters = UserMark.objects.filter(
             user=user,
             exclude_from_cgpa=False
         ).values('academic_year', 'semester').distinct().order_by('academic_year', 'semester')
-        
-        semester_gpas = []
-        for semester_data in semesters:
-            gpa = GPACalculator.calculate_semester_gpa(
-                user,
-                semester_data['academic_year'],
-                semester_data['semester']
-            )
-            semester_gpas.append({
-                'academic_year': semester_data['academic_year'],
-                'semester': semester_data['semester'],
-                'gpa': gpa
-            })
-        
-        return semester_gpas
+        return [{'academic_year': s['academic_year'], 'semester': s['semester'], 'gpa': GPACalculator.calculate_semester_gpa(user, s['academic_year'], s['semester'])} for s in semesters]
     
     @staticmethod
     def get_degree_classification(cgpa):
-        """Determine degree classification based on CGPA"""
-        if cgpa >= 3.60:
-            return "First Class Honours"
-        elif cgpa >= 3.00:
-            return "Second Class Honours (Upper Division)"
-        elif cgpa >= 2.50:
-            return "Second Class Honours (Lower Division)"
-        elif cgpa >= 2.00:
-            return "Pass"
-        else:
-            return "Not Eligible for Degree"
+        if cgpa >= 3.60: return "First Class Honours"
+        if cgpa >= 3.00: return "Second Class Honours (Upper Division)"
+        if cgpa >= 2.50: return "Second Class Honours (Lower Division)"
+        if cgpa >= 2.00: return "Pass"
+        return "Not Eligible for Degree"
 
 
 class ProgressTracker:
     
     @staticmethod
     def get_completed_credits(user):
-        """
-        Calculate total credits from passed courses.
-        A course is considered passed if the average of all attempts is 50% or higher.
-        """
-        # Get all marks for the user
-        all_marks = UserMark.objects.filter(
-            user=user,
-            exclude_from_cgpa=False
-        ).select_related('course')
+        all_marks = UserMark.objects.filter(user=user, exclude_from_cgpa=False).select_related('course')
+        # Sum credits of courses where average of all attempts >= 50%
+        course_data = {}
+        for m in all_marks:
+            cid = m.course.id
+            if cid not in course_data:
+                course_data[cid] = {'totals': [], 'credits': m.course.credits}
+            course_data[cid]['totals'].append(float(m.total_mark))
         
-        # Group by course and calculate average percentage for each course
-        course_averages = {}
-        for mark in all_marks:
-            course_id = mark.course.id
-            if course_id not in course_averages:
-                course_averages[course_id] = {
-                    'course': mark.course,
-                    'totals': [],
-                    'credits': mark.course.credits
-                }
-            course_averages[course_id]['totals'].append(float(mark.total_mark))
-        
-        total_credits = 0
-        for course_id, data in course_averages.items():
-            avg_percentage = sum(data['totals']) / len(data['totals'])
-            # 50% is minimum pass for ALL courses
-            if avg_percentage >= 50:
-                total_credits += data['credits']
-        
-        return total_credits
+        total = 0
+        for data in course_data.values():
+            if sum(data['totals']) / len(data['totals']) >= 50:
+                total += data['credits']
+        return total
     
     @staticmethod
     def get_remaining_credits(user):
-        """Calculate remaining credits needed for graduation"""
         if not user.programme:
             return 0
-        completed = ProgressTracker.get_completed_credits(user)
         required = user.programme.total_credits_required
-        remaining = required - completed
-        return remaining if remaining > 0 else 0
+        completed = ProgressTracker.get_completed_credits(user)
+        return max(required - completed, 0)
     
     @staticmethod
     def get_progress_percentage(user):
-        """Calculate graduation progress percentage"""
         if not user.programme:
             return 0
-        completed = ProgressTracker.get_completed_credits(user)
         required = user.programme.total_credits_required
         if required == 0:
             return 0
-        percentage = (completed / required) * 100
-        return min(percentage, 100)
+        completed = ProgressTracker.get_completed_credits(user)
+        return min((completed / required) * 100, 100)
     
     @staticmethod
     def get_remaining_courses(user):
-        """Get courses not yet passed based on AVERAGE of all attempts"""
         if not user.programme:
-            return []
-        
+            from curriculum.models import CourseProgramme
+            return CourseProgramme.objects.none()
         from curriculum.models import CourseProgramme
         all_courses = CourseProgramme.objects.filter(programme=user.programme)
-        
-        # Get all marks for the user
-        all_marks = UserMark.objects.filter(
-            user=user,
-            exclude_from_cgpa=False
-        ).select_related('course')
-        
-        # Group by course and calculate average percentage
-        passed_course_ids = []
-        course_averages = {}
-        for mark in all_marks:
-            course_id = mark.course.id
-            if course_id not in course_averages:
-                course_averages[course_id] = {
-                    'course': mark.course,
-                    'totals': []
-                }
-            course_averages[course_id]['totals'].append(float(mark.total_mark))
-        
-        for course_id, data in course_averages.items():
-            avg_percentage = sum(data['totals']) / len(data['totals'])
-            if avg_percentage >= 50:  # Pass threshold for ALL courses
-                passed_course_ids.append(course_id)
-        
-        return all_courses.exclude(course_id__in=passed_course_ids)
+        all_marks = UserMark.objects.filter(user=user, exclude_from_cgpa=False).select_related('course')
+        passed_ids = []
+        course_avg = {}
+        for m in all_marks:
+            cid = m.course.id
+            if cid not in course_avg:
+                course_avg[cid] = {'totals': []}
+            course_avg[cid]['totals'].append(float(m.total_mark))
+        for cid, data in course_avg.items():
+            if sum(data['totals']) / len(data['totals']) >= 50:
+                passed_ids.append(cid)
+        if passed_ids:
+            return all_courses.exclude(course_id__in=passed_ids)
+        return all_courses

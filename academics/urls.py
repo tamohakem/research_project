@@ -9,7 +9,8 @@ urlpatterns = [
     path('marks/entry/', views.marks_entry_view, name='marks_entry'),
     path('summary/', views.academic_summary_view, name='academic_summary'),
     path('progress/', views.progress_view, name='progress'),
-    
+    path('simulate/', student_views.simulate_marks, name='simulate_marks'),
+       
     # Student Academic Hub URLs
     path('hub/', student_views.student_academic_hub, name='student_hub'),
     path('select-courses/', student_views.select_courses, name='select_courses'),

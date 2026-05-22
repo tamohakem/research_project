@@ -16,12 +16,11 @@ class Grade(models.Model):
     class Meta:
         ordering = ['-grade_point']
 
-
 class UserMark(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='marks')
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    ca_mark = models.DecimalField(max_digits=5, decimal_places=2)
-    exam_mark = models.DecimalField(max_digits=5, decimal_places=2)
+    ca_mark = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    exam_mark = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(100)])
     semester = models.IntegerField(choices=[(1, 'First Semester'), (2, 'Second Semester')])
     academic_year = models.CharField(max_length=9)
     attempt_number = models.IntegerField(default=1)
@@ -31,11 +30,12 @@ class UserMark(models.Model):
     
     class Meta:
         unique_together = ['user', 'course', 'semester', 'academic_year', 'attempt_number']
+        ordering = ['-academic_year', 'semester', 'course__code']
     
     @property
     def total_mark(self):
-        total = (self.ca_mark * self.course.ca_weight + self.exam_mark * self.course.exam_weight) / 100
-        return round(total, 2)
+        # Simple sum of CA and Exam (max 100)
+        return round(self.ca_mark + self.exam_mark, 2)
     
     @property
     def grade_point(self):
@@ -55,7 +55,5 @@ class UserMark(models.Model):
     
     @property
     def is_passed(self):
-        if self.course.status_type == 'Compulsory':
-            return self.total_mark >= 50
-        else:
-            return self.total_mark >= 40
+        # 50% is the minimum pass for ALL courses
+        return self.total_mark >= 50
