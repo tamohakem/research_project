@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Programme Details - {{ programme.code }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Programme Details: {{ programme.code }}</h4>
+        </div>
+        <div class="card-body">
+            <a href="{% url 'dashboard:manage_programmes' %}" class="btn btn-secondary mb-3">← Back to Programmes</a>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">Programme Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <tr><td><strong>Department</strong></td><td>{{ programme.department.name }}</td></tr>
+                                <tr><td><strong>Degree Type</strong></td><td>{{ programme.get_degree_type_display }}</td></tr>
+                                <tr><td><strong>Programme Name</strong></td><td>{{ programme.name }}</td></tr>
+                                {% if programme.option_name %}
+                                <tr><td><strong>Option/Specialization</strong></td><td>{{ programme.option_name }}</td></tr>
+                                {% endif %}
+                                <tr><td><strong>Duration</strong></td><td>{{ programme.duration_years }} years</td></tr>
+                                <tr><td><strong>Payment Status</strong></td><td>{{ programme.get_payment_status_display }}</td></tr>
+                                <tr><td><strong>Total Credits Required</strong></td><td>{{ programme.total_credits_required }}</td></tr>
+                                <tr><td><strong>Top-up Programme</strong></td><td>{% if programme.is_top_up %}Yes{% else %}No{% endif %}</td></tr>
+                                {% if programme.entry_requirements %}
+                                <tr><td><strong>Entry Requirements</strong></td><td>{{ programme.entry_requirements|linebreaks }}</td></tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Statistics</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h2>{{ students_count }}</h2>
+                            <p>Enrolled Students</p>
+                            <hr>
+                            <h2>{{ courses_count }}</h2>
+                            <p>Courses in Programme</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if students %}
+            <div class="card mt-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Enrolled Students</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr><th>Student ID</th><th>Name</th><th>Email</th><th>Current Year</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ student.student_id|default:"-" }}</div>
+                                    <td>{{ student.get_full_name }}</div>
+                                    <td>{{ student.email }}</div>
+                                    <td>Year {{ student.current_year|default:"-" }}</div>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

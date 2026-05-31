@@ -1,3 +1,3 @@
 from django.contrib import admin
 
-# Empty file - no models yet
+# Register your models here if needed

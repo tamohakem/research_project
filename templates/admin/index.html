@@ -1,0 +1,50 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content_title %}
+<h1>Welcome to FET Academic Tracking System</h1>
+{% endblock %}
+
+{% block sidebar %}
+<div class="module" style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+    <h2>📌 Quick Navigation</h2>
+    <ul style="list-style: none; padding-left: 0;">
+        <li style="margin: 10px 0;">
+            <a href="/dashboard/" style="color: #003366; text-decoration: none;">
+                → Go to Student Dashboard
+            </a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="/dashboard/admin/" style="color: #003366; text-decoration: none;">
+                → Go to Admin Dashboard
+            </a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="/academics/hub/" style="color: #003366; text-decoration: none;">
+                → Student Academic Hub
+            </a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="/admin/auth/user/" style="color: #003366; text-decoration: none;">
+                → Manage Users
+            </a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="/admin/accounts/programme/" style="color: #003366; text-decoration: none;">
+                → Manage Programmes
+            </a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="/admin/curriculum/course/" style="color: #003366; text-decoration: none;">
+                → Manage Courses
+            </a>
+        </li>
+        <li style="margin: 10px 0;">
+            <a href="/admin/registration/courseregistration/" style="color: #003366; text-decoration: none;">
+                → View Registrations
+            </a>
+        </li>
+    </ul>
+</div>
+{{ block.super }}
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Programme - FET System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Add New Academic Programme</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Department *</label>
+                        <select name="department" class="form-select" required>
+                            <option value="">Select Department</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.name }} ({{ dept.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Degree Type *</label>
+                        <select name="degree_type" class="form-select" required>
+                            <option value="">Select Degree Type</option>
+                            {% for code, label in degree_choices %}
+                                <option value="{{ code }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Programme Name *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Option/Specialization</label>
+                        <input type="text" name="option_name" class="form-control" placeholder="e.g., Software Engineering">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label>Duration (years) *</label>
+                        <input type="number" name="duration_years" step="0.5" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label>Payment Status *</label>
+                        <select name="payment_status" class="form-select" required>
+                            {% for code, label in payment_choices %}
+                                <option value="{{ code }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label>Total Credits Required</label>
+                        <input type="number" name="total_credits" class="form-control" placeholder="Auto-filled if empty">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_top_up" class="form-check-input" id="is_top_up">
+                            <label class="form-check-label" for="is_top_up">This is a Top-up Programme</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label>Entry Requirements</label>
+                    <textarea name="entry_requirements" class="form-control" rows="3" placeholder="List the entry requirements for this programme..."></textarea>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary">Save Programme</button>
+                    <a href="{% url 'dashboard:manage_programmes' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

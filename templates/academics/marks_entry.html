@@ -138,15 +138,24 @@
             </div>
         {% endif %}
     </div>
-    <script>
+<script>
     function validateCA(input) {
         var value = parseFloat(input.value);
         var courseId = input.id.split('_')[1];
         var warningDiv = document.getElementById('ca_warning_' + courseId);
+        
         if (isNaN(value)) { input.value = 0; return; }
-        if (value > 30) { input.value = 30; warningDiv.innerHTML = 'CA cannot exceed 30. Set to 30.'; setTimeout(function() { warningDiv.innerHTML = ''; }, 3000); }
-        else if (value < 0) { input.value = 0; warningDiv.innerHTML = 'CA cannot be negative. Set to 0.'; setTimeout(function() { warningDiv.innerHTML = ''; }, 3000); }
-        else { warningDiv.innerHTML = ''; }
+        if (value > 30) { 
+            input.value = 30; 
+            warningDiv.innerHTML = 'CA cannot exceed 30. Set to 30.';
+            setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+        } else if (value < 0) { 
+            input.value = 0; 
+            warningDiv.innerHTML = 'CA cannot be negative. Set to 0.';
+            setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+        } else {
+            warningDiv.innerHTML = '';
+        }
         calculateTotal(courseId);
     }
     
@@ -154,32 +163,39 @@
         var value = parseFloat(input.value);
         var courseId = input.id.split('_')[1];
         var warningDiv = document.getElementById('exam_warning_' + courseId);
+        
         if (isNaN(value)) { input.value = 0; return; }
-        if (value > 70) { input.value = 70; warningDiv.innerHTML = 'Exam cannot exceed 70. Set to 70.'; setTimeout(function() { warningDiv.innerHTML = ''; }, 3000); }
-        else if (value < 0) { input.value = 0; warningDiv.innerHTML = 'Exam cannot be negative. Set to 0.'; setTimeout(function() { warningDiv.innerHTML = ''; }, 3000); }
-        else { warningDiv.innerHTML = ''; }
+        if (value > 70) { 
+            input.value = 70; 
+            warningDiv.innerHTML = 'Exam cannot exceed 70. Set to 70.';
+            setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+        } else if (value < 0) { 
+            input.value = 0; 
+            warningDiv.innerHTML = 'Exam cannot be negative. Set to 0.';
+            setTimeout(function() { warningDiv.innerHTML = ''; }, 3000);
+        } else {
+            warningDiv.innerHTML = '';
+        }
         calculateTotal(courseId);
     }
     
     function calculateTotal(courseId) {
         var caInput = document.getElementById('ca_' + courseId);
         var examInput = document.getElementById('exam_' + courseId);
+        
         if (!caInput || !examInput) return;
         
         var caMark = parseFloat(caInput.value) || 0;
         var examMark = parseFloat(examInput.value) || 0;
         
-        if (caMark > 30) caMark = 30;
-        if (caMark < 0) caMark = 0;
-        if (examMark > 70) examMark = 70;
-        if (examMark < 0) examMark = 0;
-        
-        var total = caMark + examMark;   // SIMPLE SUM
+        // SIMPLE SUM - NO AVERAGE
+        var total = caMark + examMark;
         var totalPercent = total.toFixed(2);
         
         document.getElementById('total_' + courseId).innerHTML = totalPercent + '%';
         
         var grade = '', points = 0, status = '', credit = '';
+        
         if (total >= 80) { grade = 'A'; points = 4.00; status = 'Passed'; credit = 'Yes'; }
         else if (total >= 70) { grade = 'B+'; points = 3.50; status = 'Passed'; credit = 'Yes'; }
         else if (total >= 60) { grade = 'B'; points = 3.00; status = 'Passed'; credit = 'Yes'; }
@@ -193,10 +209,16 @@
         document.getElementById('points_' + courseId).innerHTML = points.toFixed(2);
         
         var statusElem = document.getElementById('status_' + courseId);
-        if (statusElem) { statusElem.innerHTML = status; statusElem.className = (status === 'Passed') ? 'passed' : 'failed'; }
+        if (statusElem) { 
+            statusElem.innerHTML = status; 
+            statusElem.className = (status === 'Passed') ? 'passed' : 'failed'; 
+        }
         
         var creditElem = document.getElementById('credit_' + courseId);
-        if (creditElem) { creditElem.innerHTML = credit; creditElem.className = (credit === 'Yes') ? 'passed' : 'failed'; }
+        if (creditElem) { 
+            creditElem.innerHTML = credit; 
+            creditElem.className = (credit === 'Yes') ? 'passed' : 'failed'; 
+        }
     }
     
     document.addEventListener('DOMContentLoaded', function() {

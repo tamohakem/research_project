@@ -14,11 +14,9 @@ def marks_entry_view(request):
         messages.warning(request, 'Graduates cannot enter new marks.')
         return redirect('dashboard:home')
     
-    # Get current academic year and semester
     academic_year = request.GET.get('academic_year', '2024-2025')
     semester = int(request.GET.get('semester', 1))
     
-    # Get ALL courses for the user's programme and current year
     courses = []
     if request.user.programme:
         course_programmes = CourseProgramme.objects.filter(
@@ -27,9 +25,8 @@ def marks_entry_view(request):
         ).select_related('course')
         courses = [cp.course for cp in course_programmes]
     else:
-        messages.warning(request, 'No programme assigned to your account. Please contact admin.')
+        messages.warning(request, 'No programme assigned to your account.')
     
-    # Handle form submission
     if request.method == 'POST':
         with transaction.atomic():
             for key, value in request.POST.items():
@@ -52,12 +49,11 @@ def marks_entry_view(request):
                                 }
                             )
                         except Exception as e:
-                            messages.error(request, f'Error saving marks for course: {e}')
+                            messages.error(request, f'Error saving marks: {e}')
             
             messages.success(request, 'Marks saved successfully!')
             return redirect('academics:marks_entry')
     
-    # Get existing marks for this student
     existing_marks = {}
     for mark in UserMark.objects.filter(
         user=request.user,
@@ -80,10 +76,8 @@ def marks_entry_view(request):
 @login_required
 def academic_summary_view(request):
     semesters = GPACalculator.get_semester_gpas(request.user)
-    
     cgpa = GPACalculator.calculate_cumulative_gpa(request.user)
     classification = GPACalculator.get_degree_classification(cgpa)
-    
     recent_marks = UserMark.objects.filter(user=request.user).select_related('course')[:10]
     
     context = {
@@ -98,22 +92,24 @@ def academic_summary_view(request):
 
 @login_required
 def progress_view(request):
-    """
-    Display graduation progress based on passed courses.
-    Completed Credits: Sum of credits from all passed courses (Grade C or above)
-    Remaining Credits: Total Required Credits - Completed Credits
-    Progress Percentage: (Completed Credits / Total Required Credits) * 100
-    """
+    """Display graduation progress based on passed courses."""
     from curriculum.models import CourseProgramme
     
-    # Get programme information
-    programme = request.user.programme
-    if programme:
-        total_credits_required = programme.total_credits_required
+    # Get total credits required based on degree type
+    if request.user.programme:
+        degree_type = request.user.programme.degree_type
+        if degree_type in ['BENG', 'TOPUP_BENG']:
+            total_credits_required = 240
+        elif degree_type in ['MENG', 'MSC_ENG', 'TOPUP_MENG', 'TOPUP_MSC']:
+            total_credits_required = 120
+        elif degree_type == 'PHD':
+            total_credits_required = 180
+        else:
+            total_credits_required = 240
     else:
         total_credits_required = 0
     
-    # Calculate completed credits based on passed courses
+    # Calculate completed credits
     completed_credits = ProgressTracker.get_completed_credits(request.user)
     
     # Calculate remaining credits
@@ -127,16 +123,15 @@ def progress_view(request):
     else:
         progress_percentage = 0
     
-    # Get remaining courses (not yet passed)
+    # Get remaining courses
     remaining_courses = ProgressTracker.get_remaining_courses(request.user)
     
-    # Get passed courses with their average grades
+    # Get passed courses with grades
     all_marks = UserMark.objects.filter(
         user=request.user,
         exclude_from_cgpa=False
     ).select_related('course')
     
-    # Group by course and calculate average percentage
     course_results = {}
     for mark in all_marks:
         course_id = mark.course.id
@@ -147,12 +142,10 @@ def progress_view(request):
             }
         course_results[course_id]['totals'].append(float(mark.total_mark))
     
-    # Determine passed courses (average >= 50%)
     passed_courses = []
     for course_id, data in course_results.items():
         avg_percentage = sum(data['totals']) / len(data['totals'])
-        if avg_percentage >= 50:  # Pass threshold for ALL courses
-            # Determine grade based on average
+        if avg_percentage >= 50:
             if avg_percentage >= 80:
                 grade = 'A'
                 grade_point = 4.00
@@ -181,7 +174,6 @@ def progress_view(request):
                 'avg_percentage': round(avg_percentage, 2)
             })
     
-    # Sort passed courses by code
     passed_courses.sort(key=lambda x: x['code'])
     
     context = {

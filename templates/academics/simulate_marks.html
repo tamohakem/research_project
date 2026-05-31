@@ -4,13 +4,6 @@
 
 {% block content %}
 <div class="container">
-    {% if is_guest %}
-<div class="alert alert-warning">
-    <strong>Guest Mode:</strong> You are simulating as a guest. Your results will not be saved. 
-    <a href="{% url 'accounts:login' %}" class="alert-link">Login</a> or 
-    <a href="{% url 'accounts:register' %}" class="alert-link">Register</a> to save your marks.
-</div>
-{% endif %}
     <div class="row">
         <div class="col-md-12">
             <div class="card bg-primary text-white mb-4">
@@ -25,19 +18,27 @@
 
     <div class="row">
         <div class="col-md-12">
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">How it works</h5>
                 </div>
                 <div class="card-body">
                     <p>Enter your expected marks for each registered course. The system will calculate your projected CGPA without saving. You can then choose to save or discard.</p>
-                    <p class="text-muted">Note: CA (max 30), Exam (max 70). Total = CA + Exam. Grade C (50%) is the minimum pass.</p>
+                    <p class="text-muted">Note: CA (max 30), Exam (max 70). Total = CA + Exam. Grade C (50%) is the minimum pass for ALL courses.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <form method="post" class="mt-4">
+    {% if is_guest %}
+    <div class="alert alert-warning">
+        <strong>Guest Mode:</strong> You are simulating as a guest. Your results will not be saved. 
+        <a href="{% url 'accounts:login' %}" class="alert-link">Login</a> or 
+        <a href="{% url 'accounts:register' %}" class="alert-link">Register</a> to save your marks.
+    </div>
+    {% endif %}
+
+    <form method="post">
         {% csrf_token %}
         
         {% if courses %}
@@ -66,18 +67,16 @@
                     </div>
                 </div>
                 <script>
-                    (function(courseId, caWeight, examWeight) {
-                        var caInput = document.querySelector('input[name="ca_{{ course.id }}"]');
-                        var examInput = document.querySelector('input[name="exam_{{ course.id }}"]');
-                        var previewDiv = document.getElementById('preview_{{ course.id }}');
+                    (function(courseId) {
+                        var caInput = document.querySelector('input[name="ca_' + courseId + '"]');
+                        var examInput = document.querySelector('input[name="exam_' + courseId + '"]');
+                        var previewDiv = document.getElementById('preview_' + courseId);
                         
                         function updatePreview() {
                             var ca = parseFloat(caInput.value) || 0;
                             var ex = parseFloat(examInput.value) || 0;
                             var total = ca + ex;
-                            var grade = '';
-                            var points = 0;
-                            var status = '';
+                            var grade = '', points = 0, status = '';
                             
                             if (total >= 80) { grade = 'A'; points = 4.00; status = 'Passed'; }
                             else if (total >= 70) { grade = 'B+'; points = 3.50; status = 'Passed'; }
@@ -96,7 +95,7 @@
                         caInput.addEventListener('input', updatePreview);
                         examInput.addEventListener('input', updatePreview);
                         updatePreview();
-                    })({{ course.id }}, {{ course.ca_weight }}, {{ course.exam_weight }});
+                    })({{ course.id }});
                 </script>
             {% endfor %}
             

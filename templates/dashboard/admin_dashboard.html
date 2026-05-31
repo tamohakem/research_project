@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - FET System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-danger text-white mb-4">
+            <div class="card-body">
+                <h3>👑 Admin Dashboard</h3>
+                <p>Welcome, {{ user.get_full_name }}! Manage the FET Academic System</p>
+                <a href="/dashboard/" class="btn btn-light">← Back to Student Dashboard</a>
+                <a href="/admin/" class="btn btn-light">Django Admin</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ total_students }}</h2>
+                <p class="text-muted">Total Students</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-graduation-cap fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ total_graduates }}</h2>
+                <p class="text-muted">Graduates</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-book fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ total_courses }}</h2>
+                <p class="text-muted">Courses</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ total_departments }}</h2>
+                <p class="text-muted">Departments</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-edit fa-2x text-primary mb-2"></i>
+                <h2 class="mb-0">{{ total_registrations }}</h2>
+                <p class="text-muted">Total Registrations</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                <h2 class="mb-0">{{ students_no_programme }}</h2>
+                <p class="text-muted">Students w/o Programme</p>
+                {% if students_no_programme > 0 %}
+                    <span class="badge bg-danger">Action Needed</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-tag fa-2x text-info mb-2"></i>
+                <h2 class="mb-0">{{ total_programmes }}</h2>
+                <p class="text-muted">Total Programmes</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Programme Structure Overview by Department -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📚 Academic Programme Structure by Department</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for dept in departments %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">{{ dept.name }} ({{ dept.code }})</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Programmes Offered:</strong> {{ dept.programmes.count }}</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr><th>Degree</th><th>Option/Specialization</th><th>Duration</th><th>Payment</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for prog in dept.programmes.all|slice:":5" %}
+                                            <tr>
+                                                <td>{{ prog.get_degree_type_display|truncatechars:25 }}</div>
+                                                <td>{{ prog.option_name|default:"General" }}</div>
+                                                <td>{{ prog.duration_years }} years</div>
+                                                <td>
+                                                    {% if prog.payment_status == 'PAID' %}
+                                                        <span class="badge bg-warning">Paid</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">Free</span>
+                                                    {% endif %}
+                                                </div>
+                                            </tr>
+                                            {% endfor %}
+                                            {% if dept.programmes.count > 5 %}
+                                            <tr>
+                                                <td colspan="4"><em class="text-muted">+{{ dept.programmes.count|add:"-5" }} more programmes</em></td>
+                                            </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <a href="{% url 'dashboard:manage_programmes' %}?department={{ dept.id }}" class="btn btn-sm btn-outline-primary">View All Programmes</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popular Courses -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📊 Most Popular Courses</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Course Code</th><th>Course Title</th><th>Students</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for course in popular_courses %}
+                            <tr>
+                                <td>{{ course.course__code }}</div>
+                                <td>{{ course.course__title|truncatechars:30 }}</div>
+                                <td>{{ course.count }}</div>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3">No registrations yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students by Year -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">🎓 Students by Year</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Year</th><th>Number of Students</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for year_data in students_by_year %}
+                            <tr>
+                                <td>Year {{ year_data.current_year|default:"Not Assigned" }}</div>
+                                <td>{{ year_data.count }}</div>
+                            </tr>
+                            {% empty %}
+                            <td><td colspan="2">No data available</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Registrations -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">🔄 Recent Registrations</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Student</th><th>Course</th><th>Status</th><th>Date</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for reg in recent_registrations %}
+                            <tr>
+                                <td>{{ reg.student.get_full_name }}</div>
+                                <td>{{ reg.course.code }} - {{ reg.course.title|truncatechars:30 }}</div>
+                                <td>
+                                    <span class="badge bg-{% if reg.status == 'registered' %}success{% elif reg.status == 'dropped' %}danger{% else %}warning{% endif %}">
+                                        {{ reg.status|title }}
+                                    </span>
+                                </div>
+                                <td>{{ reg.registered_date|date:"Y-m-d H:i" }}</div>
+                                <td>
+                                    <a href="{% url 'dashboard:student_details' reg.student.id %}" class="btn btn-sm btn-info">View</a>
+                                </div>
+                            </tr>
+                            {% empty %}
+                            <td><td colspan="5">No recent registrations</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">⚡ Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'dashboard:manage_students' %}" class="btn btn-primary w-100">Manage Students</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'dashboard:manage_registrations' %}" class="btn btn-success w-100">Manage Registrations</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'dashboard:manage_departments' %}" class="btn btn-info w-100">Manage Departments</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'dashboard:manage_programmes' %}" class="btn btn-warning w-100">Manage Programmes</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'dashboard:bulk_assign' %}" class="btn btn-secondary w-100">Bulk Assign Programme</a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="/admin/" class="btn btn-dark w-100">Django Admin Panel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

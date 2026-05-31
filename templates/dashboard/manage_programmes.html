@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Programmes - FET System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Manage Academic Programmes</h4>
+        </div>
+        <div class="card-body">
+            <a href="/dashboard/admin/" class="btn btn-secondary mb-3">← Back to Admin Dashboard</a>
+            
+            <!-- Filter Bar -->
+            <form method="get" class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <select name="department" class="form-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_dept == dept.id|stringformat:"s" %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select name="degree_type" class="form-select">
+                        <option value="">All Degree Types</option>
+                        {% for code, label in degree_choices %}
+                            <option value="{{ code }}" {% if selected_degree == code %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'dashboard:add_programme' %}" class="btn btn-success w-100">+ Add Programme</a>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Degree Type</th>
+                            <th>Programme Name</th>
+                            <th>Option/Specialization</th>
+                            <th>Duration</th>
+                            <th>Payment</th>
+                            <th>Top-up</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prog in programmes %}
+                        <tr>
+                            <td>{{ prog.department.code }}</div>
+                            <td>{{ prog.get_degree_type_display|truncatechars:25 }}</div>
+                            <td>{{ prog.name }}</div>
+                            <td>{{ prog.option_name|default:"-" }}</div>
+                            <td>{{ prog.duration_years }} years</div>
+                            <td>
+                                {% if prog.payment_status == 'PAID' %}
+                                    <span class="badge bg-warning">💰 Paid</span>
+                                {% elif prog.payment_status == 'UNPAID' %}
+                                    <span class="badge bg-success">📖 Free</span>
+                                {% else %}
+                                    <span class="badge bg-info">Varies</span>
+                                {% endif %}
+                            </div>
+                            <td>
+                                {% if prog.is_top_up %}
+                                    <span class="badge bg-secondary">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">No</span>
+                                {% endif %}
+                            </div>
+                            <td>
+                                <a href="{% url 'dashboard:programme_details' prog.id %}" class="btn btn-sm btn-info">View</a>
+                                <a href="{% url 'dashboard:edit_programme' prog.id %}" class="btn btn-sm btn-primary">Edit</a>
+                            </div>
+                        </tr>
+                        {% empty %}
+                        <td><td colspan="8" class="text-center">No programmes found. <a href="{% url 'dashboard:add_programme' %}">Add one</a></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

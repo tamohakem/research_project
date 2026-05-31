@@ -9,7 +9,21 @@ def home_view(request):
     cgpa = GPACalculator.calculate_cumulative_gpa(user)
     classification = GPACalculator.get_degree_classification(cgpa)
     completed_credits = ProgressTracker.get_completed_credits(user)
-    total_credits = user.programme.total_credits_required if user.programme else 0
+    
+    # Get total credits required based on degree type
+    if user.programme:
+        degree_type = user.programme.degree_type
+        if degree_type in ['BENG', 'TOPUP_BENG']:
+            total_credits = 240
+        elif degree_type in ['MENG', 'MSC_ENG', 'TOPUP_MENG', 'TOPUP_MSC']:
+            total_credits = 120
+        elif degree_type == 'PHD':
+            total_credits = 180
+        else:
+            total_credits = 240
+    else:
+        total_credits = 240
+    
     progress_percentage = (completed_credits / total_credits * 100) if total_credits > 0 else 0
     remaining_count = ProgressTracker.get_remaining_courses(user).count()
     recent_marks = UserMark.objects.filter(user=user).select_related('course').order_by('-created_at')[:5]
