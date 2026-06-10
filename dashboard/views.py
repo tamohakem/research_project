@@ -10,7 +10,7 @@ def home_view(request):
     completed_credits = ProgressTracker.get_completed_credits(request.user)
     total_credits = request.user.programme.total_credits_required if request.user.programme else 0
     progress_percentage = (completed_credits / total_credits * 100) if total_credits > 0 else 0
-    remaining_count = ProgressTracker.get_remaining_courses(request.user).count()
+    remaining_count = len(ProgressTracker.get_remaining_courses(request.user))  # Fixed line
     
     recent_marks = UserMark.objects.filter(user=request.user).select_related('course').order_by('-created_at')[:5]
     

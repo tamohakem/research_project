@@ -64,6 +64,62 @@
     </div>
 </div>
 
+<!-- ========== ADD SECURITY SECTION WITH 2FA ========== -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt"></i> Security & Two-Factor Authentication
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div id="twoFactorStatus">
+                            <h6>
+                                <i class="fas fa-fingerprint"></i> Face Recognition 2FA
+                                <span id="statusBadge" class="badge bg-secondary ms-2">Checking...</span>
+                            </h6>
+                            <p class="text-muted mb-0">
+                                Secure your account with face recognition technology. 
+                                When enabled, you'll need to verify your face after entering your password.
+                            </p>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                Your face data is securely stored and used only for authentication
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="{% url 'face_auth:two_factor_settings' %}" class="btn btn-primary">
+                            <i class="fas fa-cog"></i> Manage 2FA Settings
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Dynamic 2FA Status Display -->
+                <div id="2faDetails" class="mt-3 pt-3 border-top" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small>
+                                <strong>Status:</strong> 
+                                <span id="2faEnabledStatus"></span>
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small>
+                                <strong>Last Used:</strong> 
+                                <span id="lastUsed"></span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Recent Marks Section -->
 {% if recent_marks %}
 <div class="row mt-4">
@@ -112,4 +168,56 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Fetch and display 2FA status
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/face-auth/status/', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const statusBadge = document.getElementById('statusBadge');
+        const detailsDiv = document.getElementById('2faDetails');
+        const enabledStatus = document.getElementById('2faEnabledStatus');
+        const lastUsed = document.getElementById('lastUsed');
+        
+        if (data.enabled && data.has_face) {
+            statusBadge.className = 'badge bg-success';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> 2FA Enabled';
+            detailsDiv.style.display = 'block';
+            enabledStatus.innerHTML = '<span class="text-success">✓ Enabled with face recognition</span>';
+            
+            if (data.last_used) {
+                const lastUsedDate = new Date(data.last_used);
+                lastUsed.innerHTML = lastUsedDate.toLocaleDateString() + ' ' + lastUsedDate.toLocaleTimeString();
+            } else {
+                lastUsed.innerHTML = 'Not used yet';
+            }
+        } else if (data.has_face && !data.enabled) {
+            statusBadge.className = 'badge bg-warning';
+            statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 2FA Disabled';
+            detailsDiv.style.display = 'block';
+            enabledStatus.innerHTML = '<span class="text-warning">⚠ Face photo saved but 2FA is OFF. Enable it in settings.</span>';
+            lastUsed.innerHTML = 'Not active';
+        } else if (!data.has_face) {
+            statusBadge.className = 'badge bg-danger';
+            statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Not Set Up';
+            detailsDiv.style.display = 'block';
+            enabledStatus.innerHTML = '<span class="text-danger">✗ No face photo registered. Please upload a photo to enable 2FA.</span>';
+            lastUsed.innerHTML = 'Not set up';
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching 2FA status:', error);
+        const statusBadge = document.getElementById('statusBadge');
+        statusBadge.className = 'badge bg-secondary';
+        statusBadge.innerHTML = 'Unavailable';
+    });
+});
+</script>
 {% endblock %}

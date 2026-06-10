@@ -4,17 +4,33 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.cache import cache
 from .forms import UserRegistrationForm, UserLoginForm
+from face_auth.models import UserFaceProfile
+import pickle
 
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard:home')
     
     if request.method == 'POST':
-        form = UserRegistrationForm(request.POST)
+        form = UserRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save()
+            profile_photo = form.face_photo
+            enable_face_auth = form.cleaned_data.get('enable_face_auth')
+
+            if profile_photo and form.face_encoding is not None:
+                UserFaceProfile.objects.create(
+                    user=user,
+                    profile_photo=profile_photo,
+                    face_encoding=pickle.dumps(form.face_encoding),
+                    two_factor_enabled=enable_face_auth
+                )
             login(request, user)
-            messages.success(request, f'Welcome {user.get_full_name()}!')
+            if profile_photo:
+                status = 'enabled' if enable_face_auth else 'set up'
+                messages.success(request, f'Welcome {user.get_full_name()}! Face authentication is {status}.')
+            else:
+                messages.success(request, f'Welcome {user.get_full_name()}!')
             return redirect('dashboard:home')
     else:
         form = UserRegistrationForm()
@@ -38,6 +54,25 @@ def login_view(request):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            try:
+                face_profile = user.face_profile
+            except UserFaceProfile.DoesNotExist:
+                face_profile = None
+
+            if (
+                face_profile
+                and face_profile.two_factor_enabled
+                and face_profile.has_face_registered
+                and face_profile.face_encoding
+            ):
+                request.session['2fa_pending_user_id'] = user.id
+                request.session['2fa_pending_username'] = user.username
+                cache.delete(failed_key)
+                return render(request, 'face_auth/face_verification.html', {
+                    'username': user.username,
+                    'requires_2fa': True
+                })
+
             login(request, user)
             cache.delete(failed_key)
             messages.success(request, f'Welcome back, {user.get_full_name()}!')

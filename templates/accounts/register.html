@@ -7,19 +7,93 @@
         .container { max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
         input, select { width: 100%; padding: 10px; margin: 10px 0; }
         button { background: #003366; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .camera-panel { margin: 15px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        video, canvas, #facePreview { width: 100%; max-height: 260px; object-fit: cover; border-radius: 8px; background: #111; }
+        canvas { display: none; }
+        .camera-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Student Registration</h2>
         
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.as_p }}
+            <div class="camera-panel">
+                <strong>Or snap your face photo with your webcam</strong>
+                <video id="faceCamera" autoplay playsinline style="display: none;"></video>
+                <canvas id="faceCanvas"></canvas>
+                <img id="facePreview" alt="Captured face preview" style="display: none;">
+                <div class="camera-actions">
+                    <button type="button" id="startCameraBtn">Start Camera</button>
+                    <button type="button" id="captureFaceBtn" style="display: none;">Snap Photo</button>
+                    <button type="button" id="retakeFaceBtn" style="display: none;">Retake</button>
+                </div>
+                <small id="cameraStatus"></small>
+            </div>
             <button type="submit">Register</button>
         </form>
         <p>Already have an account? <a href="{% url 'accounts:login' %}">Login here</a></p>
         <p><a href="/">Back to Home</a></p>
     </div>
+    <script>
+    const video = document.getElementById('faceCamera');
+    const canvas = document.getElementById('faceCanvas');
+    const preview = document.getElementById('facePreview');
+    const startBtn = document.getElementById('startCameraBtn');
+    const captureBtn = document.getElementById('captureFaceBtn');
+    const retakeBtn = document.getElementById('retakeFaceBtn');
+    const statusText = document.getElementById('cameraStatus');
+    const capturedInput = document.getElementById('id_captured_face_image');
+    const uploadInput = document.getElementById('id_profile_photo');
+    let stream = null;
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+    }
+
+    async function startCamera() {
+        try {
+            stopCamera();
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+            video.srcObject = stream;
+            video.style.display = 'block';
+            preview.style.display = 'none';
+            captureBtn.style.display = 'inline-block';
+            retakeBtn.style.display = 'none';
+            statusText.textContent = '';
+        } catch (error) {
+            statusText.textContent = 'Camera could not be started. You can still upload a photo.';
+        }
+    }
+
+    function captureFace() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg', 0.92);
+        capturedInput.value = imageData;
+        preview.src = imageData;
+        preview.style.display = 'block';
+        video.style.display = 'none';
+        captureBtn.style.display = 'none';
+        retakeBtn.style.display = 'inline-block';
+        stopCamera();
+        if (uploadInput) uploadInput.value = '';
+    }
+
+    startBtn.addEventListener('click', startCamera);
+    captureBtn.addEventListener('click', captureFace);
+    retakeBtn.addEventListener('click', startCamera);
+    if (uploadInput) {
+        uploadInput.addEventListener('change', () => {
+            if (uploadInput.files.length) capturedInput.value = '';
+        });
+    }
+    </script>
 </body>
 </html>

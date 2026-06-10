@@ -19,7 +19,8 @@ INSTALLED_APPS = [
     'curriculum',
     'academics',
     'dashboard',
-    'registration',  # Add this
+    'registration',
+    'face_auth',  # ← ADD THIS LINE - Face authentication app
 ]
 
 MIDDLEWARE = [
@@ -82,6 +83,21 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.User'
 
+# ========== LOGIN URLS (Keep your existing ones) ==========
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'dashboard:home'
 LOGOUT_REDIRECT_URL = 'index'
+
+# ========== ADD THESE NEW SETTINGS FOR 2FA ==========
+# Optional: Create a separate 2FA login URL if you want to use face recognition
+# Uncomment the line below if you want to use face 2FA as primary login
+# LOGIN_URL = 'face_auth:two_factor_login'
+
+# Session settings for 2FA
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 3600  # 1 hour session timeout
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Face recognition settings
+FACE_2FA_TOLERANCE = 0.6  # Lower = stricter matching
+FACE_2FA_MAX_ATTEMPTS = 5  # Max failed attempts before lockout

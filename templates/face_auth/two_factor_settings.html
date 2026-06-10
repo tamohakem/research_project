@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Two-Factor Authentication Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> 
+                        Two-Factor Authentication Settings
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>How 2FA works:</strong>
+                        <ol class="mb-0 mt-2">
+                            <li>Upload a clear, front-facing photo of your face</li>
+                            <li>Enable two-factor authentication</li>
+                            <li>During login, after entering your password, you'll need to verify your face using your webcam</li>
+                        </ol>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data" id="twoFactorForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-camera"></i> Profile Photo for 2FA
+                            </label>
+                            
+                            {% if has_face %}
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <img src="{{ profile.profile_photo.url }}" 
+                                                 class="card-img-top" 
+                                                 alt="Current profile photo"
+                                                 style="max-height: 200px; object-fit: cover;">
+                                            <div class="card-body text-center">
+                                                <button type="button" 
+                                                        class="btn btn-danger btn-sm" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deletePhotoModal">
+                                                    <i class="fas fa-trash"></i> Delete Photo
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle"></i>
+                                            Profile photo is set. You can upload a new photo to replace it.
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {{ form.profile_photo }}
+                            <input type="hidden" name="captured_face_image" id="capturedFaceImage">
+                            <small class="text-muted">{{ form.profile_photo.help_text }}</small>
+                            {% if form.profile_photo.errors %}
+                                <div class="text-danger">{{ form.profile_photo.errors }}</div>
+                            {% endif %}
+
+                            <div class="border rounded p-3 mt-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-video"></i> Or snap a new photo with your webcam
+                                </label>
+                                <video id="faceCamera" class="w-100 rounded bg-dark" autoplay playsinline style="display: none; max-height: 300px; object-fit: cover;"></video>
+                                <canvas id="faceCanvas" style="display: none;"></canvas>
+                                <img id="facePreview" class="w-100 rounded" alt="Captured face preview" style="display: none; max-height: 300px; object-fit: cover;">
+                                <div class="d-flex gap-2 mt-2 flex-wrap">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="startCameraBtn">
+                                        <i class="fas fa-video"></i> Start Camera
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success btn-sm" id="captureFaceBtn" style="display: none;">
+                                        <i class="fas fa-camera"></i> Snap Photo
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="retakeFaceBtn" style="display: none;">
+                                        <i class="fas fa-redo"></i> Retake
+                                    </button>
+                                </div>
+                                <small class="text-muted" id="cameraStatus"></small>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                {{ form.two_factor_enabled }}
+                                <label class="form-check-label fw-bold" for="{{ form.two_factor_enabled.id_for_label }}">
+                                    <i class="fas fa-lock"></i> {{ form.two_factor_enabled.label }}
+                                </label>
+                            </div>
+                            <small class="text-muted">{{ form.two_factor_enabled.help_text }}</small>
+                        </div>
+
+                        <div class="alert alert-warning" id="warningMessage" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Warning:</strong> You must upload a profile photo before enabling 2FA.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            <a href="{% url 'dashboard:home' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Photo Modal -->
+<div class="modal fade" id="deletePhotoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Profile Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete your profile photo?</p>
+                <p class="text-danger"><strong>Warning:</strong> This will disable two-factor authentication.</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="{% url 'face_auth:delete_profile_photo' %}">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Photo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('twoFactorForm').addEventListener('submit', function(e) {
+    const twoFactorEnabled = document.getElementById('{{ form.two_factor_enabled.id_for_label }}').checked;
+    const profilePhoto = document.getElementById('{{ form.profile_photo.id_for_label }}').files;
+    const capturedPhoto = document.getElementById('capturedFaceImage').value;
+    const currentHasFace = {{ has_face|lower }};
+    const warningMsg = document.getElementById('warningMessage');
+    
+    if (twoFactorEnabled && profilePhoto.length === 0 && !capturedPhoto && !currentHasFace) {
+        e.preventDefault();
+        warningMsg.style.display = 'block';
+        warningMsg.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        warningMsg.style.display = 'none';
+    }
+});
+
+// Preview uploaded photo
+document.getElementById('{{ form.profile_photo.id_for_label }}').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        document.getElementById('capturedFaceImage').value = '';
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            // You can add a preview element here if desired
+            console.log('Photo selected for upload');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+const video = document.getElementById('faceCamera');
+const canvas = document.getElementById('faceCanvas');
+const preview = document.getElementById('facePreview');
+const startBtn = document.getElementById('startCameraBtn');
+const captureBtn = document.getElementById('captureFaceBtn');
+const retakeBtn = document.getElementById('retakeFaceBtn');
+const statusText = document.getElementById('cameraStatus');
+const capturedInput = document.getElementById('capturedFaceImage');
+const uploadInput = document.getElementById('{{ form.profile_photo.id_for_label }}');
+let stream = null;
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+}
+
+async function startCamera() {
+    try {
+        stopCamera();
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = stream;
+        video.style.display = 'block';
+        preview.style.display = 'none';
+        captureBtn.style.display = 'inline-block';
+        retakeBtn.style.display = 'none';
+        statusText.textContent = '';
+    } catch (error) {
+        statusText.textContent = 'Camera could not be started. You can still upload a photo.';
+    }
+}
+
+function captureFace() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.92);
+    capturedInput.value = imageData;
+    preview.src = imageData;
+    preview.style.display = 'block';
+    video.style.display = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-block';
+    stopCamera();
+    uploadInput.value = '';
+}
+
+startBtn.addEventListener('click', startCamera);
+captureBtn.addEventListener('click', captureFace);
+retakeBtn.addEventListener('click', startCamera);
+</script>
+{% endblock %}

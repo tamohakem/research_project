@@ -84,6 +84,13 @@
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                 {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'face_auth:two_factor_settings' %}">
+                                    <i class="fas fa-user-shield"></i> Face Authentication
+                                    {% if user.face_profile.two_factor_enabled %}
+                                        <span class="badge bg-success ms-2">On</span>
+                                    {% endif %}
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a></li>

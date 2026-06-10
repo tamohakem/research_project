@@ -20,6 +20,9 @@ urlpatterns = [
     path('academics/', include('academics.urls')),
     path('dashboard/', include('dashboard.urls')),
     path('registration/', include('registration.urls')),
+    
+    # ========== ADD FACE AUTHENTICATION 2FA URLs ==========
+    path('face-auth/', include('face_auth.urls')),  # ← ADD THIS LINE
 ]
 
 # Serve media files in debug mode

@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Face Verification - Second Factor{% endblock %}
+
+{% block extra_css %}
+<style>
+    #video {
+        border-radius: 10px;
+        background: #000;
+        transform: scaleX(-1);
+    }
+    .verification-box {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+    }
+    .confidence-bar {
+        height: 5px;
+        transition: width 0.3s ease;
+    }
+    .blink-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 0.5; }
+        50% { opacity: 1; }
+        100% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-fingerprint"></i> 
+                        Two-Factor Authentication - Face Verification
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-user-check"></i>
+                        <strong>Welcome, {{ username }}!</strong><br>
+                        Please look at the camera for face verification.
+                    </div>
+
+                    <div class="verification-box bg-dark mb-3">
+                        <video id="video" width="100%" height="auto" autoplay playsinline></video>
+                        <canvas id="canvas" style="display: none;"></canvas>
+                    </div>
+
+                    <div class="progress mb-3" style="height: 5px;">
+                        <div id="confidenceBar" class="progress-bar bg-success" style="width: 0%"></div>
+                    </div>
+
+                    <div class="text-center mb-3">
+                        <button id="verifyBtn" class="btn btn-success btn-lg">
+                            <i class="fas fa-camera"></i> Verify My Face
+                        </button>
+                        <button id="retryBtn" class="btn btn-warning btn-lg" style="display: none;">
+                            <i class="fas fa-redo"></i> Try Again
+                        </button>
+                    </div>
+
+                    <div id="result" style="display: none;">
+                        <div id="loading" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2" id="loadingText">Verifying face against stored profile...</p>
+                        </div>
+                        
+                        <div id="successMessage" class="alert alert-success" style="display: none;">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Verification Successful!</strong>
+                            <p id="successDetails" class="mb-0 mt-2"></p>
+                        </div>
+                        
+                        <div id="errorMessage" class="alert alert-danger" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Verification Failed</strong>
+                            <p id="errorDetails" class="mb-0 mt-2"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const verifyBtn = document.getElementById('verifyBtn');
+const retryBtn = document.getElementById('retryBtn');
+const resultDiv = document.getElementById('result');
+const loadingDiv = document.getElementById('loading');
+const successMessage = document.getElementById('successMessage');
+const errorMessage = document.getElementById('errorMessage');
+const successDetails = document.getElementById('successDetails');
+const errorDetails = document.getElementById('errorDetails');
+const confidenceBar = document.getElementById('confidenceBar');
+const loadingText = document.getElementById('loadingText');
+
+let stream = null;
+let verificationInProgress = false;
+
+// Start webcam
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then(s => {
+        stream = s;
+        video.srcObject = stream;
+    })
+    .catch(err => {
+        showError('Camera access denied. Please allow camera access for 2FA.');
+        verifyBtn.disabled = true;
+    });
+
+verifyBtn.onclick = async function() {
+    if (verificationInProgress) return;
+    
+    verificationInProgress = true;
+    
+    // Show results panel
+    resultDiv.style.display = 'block';
+    loadingDiv.style.display = 'block';
+    loadingText.textContent = 'Capturing live face...';
+    successMessage.style.display = 'none';
+    errorMessage.style.display = 'none';
+    verifyBtn.disabled = true;
+
+    const imageData = captureFrame();
+    loadingText.textContent = 'Blink once now...';
+    await wait(900);
+    const blinkImageData = captureFrame();
+    loadingText.textContent = 'Verifying face against stored profile...';
+    
+    // Send for verification
+    try {
+        const response = await fetch('/face-auth/verify-face-2fa/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ image: imageData, blink_image: blinkImageData })
+        });
+        
+        const data = await response.json();
+        loadingDiv.style.display = 'none';
+        
+        if (data.success) {
+            // Show success with confidence
+            successMessage.style.display = 'block';
+            successDetails.innerHTML = `
+                Face verification successful!<br>
+                Confidence: ${data.confidence}%<br>
+                Redirecting to dashboard...
+            `;
+            
+            // Animate confidence bar
+            confidenceBar.style.width = `${data.confidence}%`;
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/dashboard/';
+            }, 2000);
+        } else {
+            // Show error
+            errorMessage.style.display = 'block';
+            let errorText = data.message;
+            if (data.attempts_left) {
+                errorText += `<br><small>Attempts left: ${data.attempts_left}</small>`;
+            }
+            errorDetails.innerHTML = errorText;
+            retryBtn.style.display = 'inline-block';
+            verifyBtn.style.display = 'none';
+        }
+    } catch (error) {
+        loadingDiv.style.display = 'none';
+        showError('Network error: ' + error.message);
+        retryBtn.style.display = 'inline-block';
+        verifyBtn.style.display = 'none';
+    } finally {
+        verificationInProgress = false;
+    }
+};
+
+function captureFrame() {
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg');
+}
+
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+retryBtn.onclick = function() {
+    // Reset UI
+    resultDiv.style.display = 'none';
+    retryBtn.style.display = 'none';
+    verifyBtn.style.display = 'inline-block';
+    verifyBtn.disabled = false;
+    confidenceBar.style.width = '0%';
+    verificationInProgress = false;
+};
+
+function showError(message) {
+    errorMessage.style.display = 'block';
+    errorDetails.innerHTML = message;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %}
