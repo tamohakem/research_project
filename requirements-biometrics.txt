@@ -1,0 +1,14 @@
+# Optional pretrained biometric models.
+# Install this file when you want ArcFace embeddings and pretrained anti-spoofing.
+#
+# Recommended:
+#   python -m pip install -r requirements.txt
+#   python -m pip install -r requirements-biometrics.txt
+#
+# Note: deepface may require a Python/TensorFlow combination supported by your
+# laptop. If it cannot install on Python 3.13, use Python 3.11 for the project venv.
+insightface
+onnxruntime
+deepface
+tf-keras
+torch

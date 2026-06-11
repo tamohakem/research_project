@@ -16,6 +16,8 @@ import pickle
 from .models import UserFaceProfile, TwoFactorAuthLog
 from .forms import TwoFactorSettingsForm
 from .fasiva import (
+    ANTI_SPOOFING_ENABLED,
+    ANTI_SPOOFING_REQUIRED,
     AUTH_METHOD,
     BLINK_EVIDENCE_REQUIRED,
     MAX_FAILED_ATTEMPTS,
@@ -269,6 +271,42 @@ def verify_face_2fa(request):
                     'message': message,
                     'attempts_left': MAX_FAILED_ATTEMPTS - profile.failed_2fa_attempts
                 })
+
+            anti_spoofing_details = (
+                face_comparator.detect_anti_spoofing(frame)
+                if ANTI_SPOOFING_ENABLED
+                else {'available': False, 'is_real': None, 'score': None, 'error': 'disabled'}
+            )
+            spoof_detected = (
+                anti_spoofing_details.get('available')
+                and anti_spoofing_details.get('is_real') is False
+            )
+            if spoof_detected or (
+                ANTI_SPOOFING_REQUIRED and not anti_spoofing_details.get('available')
+            ):
+                message = 'Anti-spoofing check failed. Please use your live face, not a photo or screen.'
+                TwoFactorAuthLog.objects.create(
+                    user=user,
+                    success=False,
+                    error_message=message,
+                    failure_reason='anti_spoofing_failed',
+                    details={
+                        'methodology': AUTH_METHOD,
+                        'stage': 'anti_spoofing_check',
+                        'anti_spoofing': anti_spoofing_details,
+                        'presence': face_comparator.last_liveness_details,
+                        'blink': blink_details,
+                    },
+                    ip_address=get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                )
+                profile.failed_2fa_attempts += 1
+                profile.save()
+                return JsonResponse({
+                    'success': False,
+                    'message': message,
+                    'attempts_left': MAX_FAILED_ATTEMPTS - profile.failed_2fa_attempts
+                })
             
             # Extract encoding from captured face
             captured_encoding, face_detected, message = face_comparator.extract_face_encoding(frame)
@@ -313,6 +351,7 @@ def verify_face_2fa(request):
                     'liveness_confidence': round(liveness_confidence, 2),
                     'presence': face_comparator.last_liveness_details,
                     'blink': blink_details,
+                    'anti_spoofing': anti_spoofing_details,
                     'scores': face_comparator.last_match_details,
                 },
                 ip_address=get_client_ip(request),

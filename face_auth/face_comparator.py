@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 
 from .fasiva import (
+    ARCFACE_MATCH_THRESHOLD,
     EDGE_SCORE_THRESHOLD,
     HISTOGRAM_SCORE_THRESHOLD,
     LBP_SCORE_THRESHOLD,
@@ -14,6 +15,7 @@ from .fasiva import (
     SUPPORTING_SCORE_THRESHOLD,
     VECTOR_SCORE_THRESHOLD,
 )
+from .pretrained_models import pretrained_models
 
 try:
     from mtcnn import MTCNN
@@ -77,15 +79,19 @@ class FaceComparator:
 
             face_vector = gray_face.astype(np.float32).flatten() / 255.0
             face_vector = (face_vector - np.mean(face_vector)) / (np.std(face_vector) + 1e-6)
+            arcface_embedding, arcface_error = pretrained_models.arcface_embedding(img)
 
             encoding = {
-                'version': 2,
+                'version': 3,
                 'histogram': histogram,
                 'lbp': self._extract_lbp_features(gray_face),
                 'face_vector': face_vector,
                 'magnitude_mean': float(np.mean(magnitude)),
                 'magnitude_std': float(np.std(magnitude)),
                 'face_box': (int(x), int(y), int(w), int(h)),
+                'arcface_embedding': arcface_embedding,
+                'pretrained_model': 'ArcFace/InsightFace' if arcface_embedding is not None else None,
+                'pretrained_error': arcface_error,
             }
 
             return encoding, True, "Face detected successfully"
@@ -160,6 +166,24 @@ class FaceComparator:
             unknown_lbp = unknown_encoding.get('lbp')
             known_vector = known_encoding.get('face_vector')
             unknown_vector = unknown_encoding.get('face_vector')
+            arcface_score = self._arcface_score(
+                known_encoding.get('arcface_embedding'),
+                unknown_encoding.get('arcface_embedding'),
+            )
+
+            if arcface_score is not None:
+                confidence = arcface_score * 100
+                distance = 1 - arcface_score
+                match = arcface_score >= ARCFACE_MATCH_THRESHOLD
+                self.last_match_details = {
+                    'method': 'ArcFace/InsightFace',
+                    'confidence': round(confidence, 2),
+                    'arcface_score': round(arcface_score, 4),
+                    'thresholds': {
+                        'arcface_score': ARCFACE_MATCH_THRESHOLD,
+                    },
+                }
+                return match, distance, confidence
 
             if any(value is None for value in (
                 known_hist, unknown_hist, known_lbp, unknown_lbp, known_vector, unknown_vector
@@ -181,6 +205,7 @@ class FaceComparator:
             supporting_score = max(hist_score, edge_score)
             distance = 1 - (confidence / 100)
             self.last_match_details = {
+                'method': 'FaSIVA/OpenCV fallback',
                 'confidence': round(confidence, 2),
                 'vector_score': round(vector_score, 4),
                 'lbp_score': round(lbp_score, 4),
@@ -239,6 +264,20 @@ class FaceComparator:
         score = float(np.corrcoef(known, unknown)[0, 1])
         if np.isnan(score):
             return 0.0
+        return max(0.0, min(1.0, score))
+
+    def _arcface_score(self, known_embedding, unknown_embedding):
+        if known_embedding is None or unknown_embedding is None:
+            return None
+
+        known_embedding = np.asarray(known_embedding, dtype=np.float32)
+        unknown_embedding = np.asarray(unknown_embedding, dtype=np.float32)
+        known_norm = np.linalg.norm(known_embedding)
+        unknown_norm = np.linalg.norm(unknown_embedding)
+        if known_norm == 0 or unknown_norm == 0:
+            return None
+
+        score = float(np.dot(known_embedding, unknown_embedding) / (known_norm * unknown_norm))
         return max(0.0, min(1.0, score))
 
     def _edge_score(self, known_encoding, unknown_encoding):
@@ -318,6 +357,9 @@ class FaceComparator:
                 'blink_detected': False,
                 'error': str(exc),
             }
+
+    def detect_anti_spoofing(self, frame):
+        return pretrained_models.anti_spoof(frame)
 
     def _crop_face(self, frame, face_box):
         x, y, w, h = face_box

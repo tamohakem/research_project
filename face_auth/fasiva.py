@@ -1,5 +1,15 @@
 AUTH_METHOD = 'fasiva_2fa'
 
+# Optional pretrained-model settings. When the packages/models are installed,
+# ArcFace is used for identity verification and DeepFace anti-spoofing is used
+# before the final match. The OpenCV FaSIVA fallback remains available.
+USE_PRETRAINED_FACE_MODEL = True
+PRETRAINED_FACE_MODEL_NAME = 'buffalo_l'
+ARCFACE_MATCH_THRESHOLD = 0.45
+ANTI_SPOOFING_ENABLED = True
+ANTI_SPOOFING_REQUIRED = False
+ANTI_SPOOFING_THRESHOLD = 0.50
+
 # FaSIVA verification thresholds. Identity is decided primarily by structure
 # and local texture; lighting-sensitive histogram/edge scores are audit signals.
 MATCH_CONFIDENCE_THRESHOLD = 68
