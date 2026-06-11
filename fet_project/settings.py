@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -101,3 +102,24 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Face recognition settings
 FACE_2FA_TOLERANCE = 0.6  # Lower = stricter matching
 FACE_2FA_MAX_ATTEMPTS = 5  # Max failed attempts before lockout
+
+# ========== EMAIL / PASSWORD RESET ==========
+# In production, set EMAIL_HOST and related SMTP variables in the environment.
+# During local development, reset emails are printed to the console.
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend'
+    if os.environ.get('EMAIL_HOST')
+    else 'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() in ('1', 'true', 'yes')
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'false').lower() in ('1', 'true', 'yes')
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL',
+    EMAIL_HOST_USER or 'FET Academic Tracker <no-reply@fet-academic-tracker.local>'
+)
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
