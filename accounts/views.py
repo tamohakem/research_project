@@ -5,7 +5,10 @@ from django.contrib import messages
 from django.core.cache import cache
 from .forms import UserRegistrationForm, UserLoginForm
 from face_auth.models import UserFaceProfile
+import logging
 import pickle
+
+logger = logging.getLogger(__name__)
 
 def register_view(request):
     if request.user.is_authenticated:
@@ -32,6 +35,8 @@ def register_view(request):
             else:
                 messages.success(request, f'Welcome {user.get_full_name()}!')
             return redirect('dashboard:home')
+        logger.warning("Registration form invalid: %s", form.errors.as_json())
+        messages.error(request, 'Registration could not be completed. Please review the highlighted errors below.')
     else:
         form = UserRegistrationForm()
     

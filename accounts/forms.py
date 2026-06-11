@@ -66,7 +66,8 @@ class UserRegistrationForm(UserCreationForm):
             encoding, success, message = face_comparator.extract_face_encoding(face_photo)
             face_photo.seek(0)
             if not success:
-                self.add_error('profile_photo', f'Could not use this photo for face authentication: {message}')
+                if enable_face_auth:
+                    self.add_error('profile_photo', f'Could not use this photo for face authentication: {message}')
             else:
                 self.face_encoding = encoding
                 self.face_photo = face_photo
